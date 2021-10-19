@@ -1,0 +1,96 @@
+---
+title: "Preprocessing"
+output: html_document
+---
+
+GOALS:
+
++ Read encoded data
++ Preliminary feature selection:
+  + Filter constant features
+  + Filter correlated features
+
+Setup workspace
+
+```{r setup, include=FALSE}
+getwd()
+library(janitor)
+library(caret)
+```
+
+Preprocessing function
+  - remove constant features
+  - remove highly correlated features (> 0.8)
+
+```{r preprocess_function}
+preprocessData <- function(path) {
+  print("reading file...")
+  data <- read.csv(path)
+  print("removing constant features...")
+  data <- remove_constant(data)
+  # print("calculation correlations...")
+  # corr <- cor(data, method = "spearman")
+  # featuresToRemove <- findCorrelation(corr, cutoff = 0.8)
+  # if (featuresToRemove != 0) {
+  #   print(paste(
+  #     "removing",
+  #     length(featuresToRemove),
+  #     "correlated features..."
+  #   ))
+  #   data <- subset(data, select = -featuresToRemove)
+  # }
+  print(paste("cleaned dataset contains", ncol(data), "features."))
+  return(data)
+}
+```
+
+Read & preprocess ace vaxinpad
+
+```{r message=FALSE, warning=FALSE}
+ace_vaxinpad <-
+  preprocessData("../Data/ace_vaxinpad/ace_vaxinpad_binary_centered.csv")
+ace_vaxinpad_classes <-
+  read.csv("../Data/ace_vaxinpad/ace_vaxinpad_classes.txt", header = F)
+ace_vaxinpad_classes <-
+  factor(ace_vaxinpad_classes[, 1], labels = c("No", "Yes"))
+```
+
+Read & preprocess HIV protease
+
+```{r message=FALSE, warning=FALSE}
+hiv_protease <-
+  preprocessData("../Data/hiv_protease/hiv_protease_binary_centered.csv")
+hiv_protease_classes <-
+  read.csv("../Data/hiv_protease/hiv_protease_classes.txt", header = F)
+hiv_protease_classes <-
+  factor(hiv_protease_classes[, 1], labels = c("No, Yes"))
+```
+
+Train / Test split
+
+```{r}
+set.seed(69)
+trainIndACE <- createDataPartition(y = ace_vaxinpad_classes, p = 0.8, list = F)
+trainIndHIV <- createDataPartition(y = hiv_protease_classes, p = 0.8, list = F)
+```
+
+Classes
+
+```{r}
+ace_vaxinpad_classes_train <- ace_vaxinpad_classes[trainIndACE]
+ace_vaxinpad_classes_test <- ace_vaxinpad_classes[-trainIndACE]
+
+hiv_protease_classes_train <- ace_vaxinpad_classes[trainIndHIV]
+hiv_protease_classes_test <- ace_vaxinpad_classes[-trainIndHIV]
+```
+
+Original data sets
+
+```{r}
+ace_vaxinpad_train <- ace_vaxinpad[trainIndACE, ]
+ace_vaxinpad_test <- ace_vaxinpad[-trainIndACE, ]
+
+hiv_protease_classes_train <- hiv_protease[trainIndHIV, ]
+hiv_protease_classes_test <- hiv_protease[-trainIndHIV, ]
+```
+

@@ -1,0 +1,173 @@
+---
+title: "Dimensionality_Reduction"
+output: html_document
+---
+
+GOALS:
+
+- Explore different projections:
+  + PCA
+    + Screeplot
+  - MDS
+    - Different distance metrics
+    - STRESS
+    - Shepard Plot
+  - t-SNE
+  - LLE
+  - ISOMAP
+  - NeRV
+  - CCA
+  - ESOM (?)
+  
+- Explore other approaches:
+  - Wrapper:
+    - RFE
+    - Genetic
+  - Filter:
+    - Correlation based (FCBF package)
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+library(ProjectionBasedClustering)
+```
+
+Desired dimensions
+
+```{r}
+dimensions <-
+  c(1:10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    75,
+    100,
+    125,
+    150,
+    175,
+    200,
+    250,
+    300,
+    350,
+    400,
+    450,
+    500)
+```
+
+PCA function
+
+```{r pca}
+optimizePCA <- function(train, test) {
+  p <- prcomp(train)
+  summ.p <- summary(p)
+  var.explained <- summ.p$importance[2,]
+  
+  gg <- ggplot(data = data.frame(x = 1:50, y = (p$sdev ^ 2)[1:50]),
+               mapping = aes(x = x, y = y)) + geom_point() + geom_line()
+  plot(gg + labs(title = "Screeplot",
+                 x = "Components",
+                 y = "Eigenvalues"))
+  
+  no_of_features <- which(cumsum(var.explained) > 0.8)[1]
+  
+  print(paste(no_of_features, "components account for 80% of total variance"))
+  
+  train_return <- data.frame(p$x[, 1:no_of_features])
+  
+  test_return <-
+    data.frame(predict(p, newdata = test)[, 1:no_of_features])
+  
+  return(list("train" = train_return, "test" = test_return))
+}
+```
+
+PCA ace vaxinpad
+
+```{r}
+pca_ace_vaxinpad <- optimizePCA(train = ace_vaxinpad_train, test = ace_vaxinpad_test)
+```
+
+MDS functions
+
+```{r mds_funcs}
+calculateMDS <- function(original_distances, dimensions) {
+  stress <- vector("list", length(dimensions))
+  projected_points <- vector("list", length(dimensions))
+  
+  for (i in 1:length(dimensions)) {
+    mds <-
+      MDS(as.matrix(original_distances), OutputDimension = dimensions[i])
+    stress[[i]] <- mds$Stress
+    projected_points[[i]] <- mds$ProjectedPoints
+  }
+  return(list(
+    "stress" = stress,
+    "points" = projected_points,
+    "dimensions" = dimensions
+  ))
+}
+
+plotScreeplot <- function(stress, dimensions) {
+  p <-
+    ggplot(data = data.frame(x = dimensions, y = stress),
+           mapping = aes(x = x, y = y)) +
+    geom_point() +
+    geom_line()
+  
+  return(
+    p + labs(
+      title = "Screeplot",
+      x = "Dimensions",
+      y = "STRESS"
+    )
+  )
+}
+
+determineGoodStressValues <- function(stress, dimensions, cutoff) {
+  return(dimensions[stress <= cutoff])
+}
+
+plotShepardPlot <- function(original_distances, new_distances) {
+  correlation <- cor(original_distances, new_distances)
+  p <-
+    ggplot(
+      data = data.frame(x = original_distances, y = new_distances),
+      mapping = aes(x = x, y = y)
+    ) +
+    geom_point(size = 1, alpha = 0.5) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey")
+  
+  return(
+    p + labs(
+      title = "Shepard plot",
+      subtitle = paste("r =", correlation),
+      x = "Original distances",
+      y = "Projected distances"
+    )
+  )
+}
+
+optimizeMDS <- function(data, dimensions) {
+  distances <- dist(data)
+  mds <- calculateMDS(distances, dimensions)
+  plot(plotScreeplot(unlist(mds$stress, use.names = F), dimensions))
+  opt_stress <-
+    determineGoodStressValues(unlist(mds$stress, use.names = F), dimensions, cutoff = 0.1)
+  opt_points <- mds$points[[which(dimensions == opt_stress[1])]]
+  new_distances <- dist(opt_points)
+  plot(plotShepardPlot(as.vector(distances), as.vector(new_distances)))
+  return(opt_points)
+}
+```
+
+MDS ace vaxinpad
+
+```{r}
+mds_points_ace_vaxinpad <- optimizeMDS(ace_vaxinpad, dimensions)
+dim(mds_points_ace_vaxinpad)
+```
+
+

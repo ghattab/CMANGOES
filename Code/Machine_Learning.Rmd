@@ -1,0 +1,345 @@
+---
+title: "Masters"
+output: html_document
+---
+
+Prepare workspace
+
+```{r setup, include=FALSE}
+getwd()
+library(parallel)
+library(doParallel)
+library(caret)
+library(MLeval)
+library(ggplot2)
+library(janitor)
+library(mlr)
+library(akmedoids)
+```
+
+Read data sets
+
+```{r}
+ace_vaxinpad <-
+  read.csv("../Data/ace_vaxinpad/ace_vaxinpad_binary_centered.csv")
+ace_vaxinpad_classes <-
+  read.csv("../Data/ace_vaxinpad/ace_vaxinpad_classes.txt", header = F)
+ace_vaxinpad_classes <- factor(ace_vaxinpad_classes[, 1], labels = c("No", "Yes"))
+
+hiv_protease <-
+  read.csv("../Data/hiv_protease/hiv_protease_binary_centered.csv")
+hiv_protease_classes <-
+  read.csv("../Data/hiv_protease/hiv_protease_classes.txt", header = F)
+hiv_protease_classes <- factor(hiv_protease_classes[, 1], labels = c("No", "Yes"))
+```
+
+Split train / test
+
+```{r}
+set.seed(12)
+trainIndACE <- createDataPartition(y = ace_vaxinpad_classes, p = 0.8, list = F)[, 1]
+trainIndHIV <- createDataPartition(y = hiv_protease_classes, p = 0.8, list = F)[, 1]
+
+ace_vaxinpad_train <- ace_vaxinpad[trainIndACE, ]
+ace_vaxinpad_test <- ace_vaxinpad[-trainIndACE, ]
+
+ace_vaxinpad_classes_train <- ace_vaxinpad_classes[trainIndACE]
+ace_vaxinpad_classes_test <- ace_vaxinpad_classes[-trainIndACE]
+
+hiv_protease_train <- hiv_protease[trainIndHIV, ]
+hiv_protease_test <- hiv_protease[-trainIndHIV, ]
+
+hiv_protease_classes_train <- hiv_protease_classes[trainIndHIV]
+hiv_protease_classes_test <- hiv_protease_classes[-trainIndHIV]
+```
+
+Preprocessing function
+
+```{r}
+preprocessData <- function(data) {
+  d <- remove_constant(data)
+  corr <- cor(d, method = "spearman")
+  featuresToRemove <- findCorrelation(corr, cutoff = 0.8)
+  if (length(featuresToRemove) != 0) {
+    d <- subset(d, select = -featuresToRemove)
+  }
+  return(d)
+}
+```
+
+Preprocess data sets
+
+```{r}
+ace_vaxinpad_train <- preprocessData(ace_vaxinpad_train)
+hiv_protease_train <- preprocessData(hiv_protease_train)
+
+ace_vaxinpad_test <- subset(ace_vaxinpad_test, select = colnames(ace_vaxinpad_train))
+hiv_protease_test <- subset(hiv_protease_test, select = colnames(hiv_protease_train))
+```
+
+Parallel training function
+
+```{r}
+createTrainControl <- function(metric, classes) {
+  control <- trainControl(
+    method = "cv",
+    number = 10,
+    index = createFolds(
+      y = classes,
+      k = 10,
+      returnTrain = T,
+      list = T
+    ),
+    classProbs = T,
+    savePredictions = T,
+    allowParallel = T
+  )
+  if (metric == "F") {
+    control$summaryFunction <- prSummary
+  }
+  if (metric == "ROC")
+    control$summaryFunction <- twoClassSummary
+  
+  return(control)
+}
+
+parallelTraining <- function(data, classes, model, metric) {
+  no_cores <- detectCores() - 2
+  cl <- makePSOCKcluster(no_cores)
+  registerDoParallel(cl)
+  
+  output <- tryCatch({
+    model <- caret::train(
+      y ~ .,
+      data = data.frame(data, y = classes),
+      method = model,
+      trControl = createTrainControl(metric = metric, classes = classes),
+      metric = metric
+    )
+    return(model)
+  }, warning = function(w) {
+    print(w)
+    return(NULL)
+  }, error = function(e) {
+    print(e)
+    return(NULL)
+  }, finally = {
+    stopCluster(cl)
+    registerDoSEQ()
+  })
+  return(output)
+}
+```
+
+PCA based feature selection
+
+```{r}
+pcaFeatureSelection <- function(train, test, plot_label, method) {
+  p <- prcomp(train)
+  summ.p <- summary(p)
+  var.explained <- summ.p$importance[2,]
+  
+  if (method == "total_var") {
+    no_of_features <- which(cumsum(var.explained) > 0.8)[1]
+    print(paste(
+      no_of_features,
+      "components account for 80% of total variance"
+    ))
+  }
+  
+  if (method == "elbow") {
+    no_of_features <-
+      floor(elbowPoint(x = c(1:length(p$sdev)), y = (p$sdev ^ 2))$x)
+    print(paste(no_of_features, "components selected based on elbow method"))
+  }
+  
+  gg <-
+    ggplot(data = data.frame(x = c(1:length(p$sdev)), y = (p$sdev ^ 2)),
+           mapping = aes(x = x, y = y)) +
+    geom_point() +
+    geom_line() +
+    geom_vline(xintercept = no_of_features, color = "red")
+  
+  plot(
+    gg + labs(
+      title = "Screeplot",
+      subtitle = plot_label,
+      x = "Components",
+      y = "Eigenvalues"
+    )
+  )
+  
+  train_return <- data.frame(p$x[, 1:no_of_features])
+  
+  test_return <-
+    data.frame(predict(p, newdata = test)[, 1:no_of_features])
+  
+  return(list("train" = train_return, "test" = test_return))
+}
+```
+
+Apply PCA based feature selection
+
+```{r}
+ace_vaxinpad_pca_var_list <-
+  pcaFeatureSelection(
+    train = ace_vaxinpad_train,
+    test = ace_vaxinpad_test,
+    plot_label = "ace vaxinpad",
+    method = "total_var"
+  )
+
+ace_vaxinpad_pca_elbow_list <-
+  pcaFeatureSelection(
+    train = ace_vaxinpad_train,
+    test = ace_vaxinpad_test,
+    plot_label = "ace vaxinpad",
+    method = "elbow"
+  )
+
+ace_vaxinpad_pca_var_train <- ace_vaxinpad_pca_var_list$train
+ace_vaxinpad_pca_var_test <- ace_vaxinpad_pca_var_list$test
+
+ace_vaxinpad_pca_elbow_train <- ace_vaxinpad_pca_elbow_list$train
+ace_vaxinpad_pca_elbow_test <- ace_vaxinpad_pca_elbow_list$test
+```
+
+Filter based feature selection using gini impurity
+
+```{r}
+giniImportanceFeatureSelection <-
+  function(data, classes, plot_label) {
+    task <-
+      makeClassifTask(data = data.frame(data, y = classes), target = "y")
+    
+    filterValues <-
+      generateFilterValuesData(task, method = "ranger_impurity")
+    
+    sortedValues <- sort(filterValues$data$value, decreasing = T)
+    
+    elbow <-
+      floor(elbowPoint(x = c(1:ncol(data)), y = sortedValues)$x)
+    
+    print(paste(elbow, "features selected based on elbow method"))
+    
+    gg <-
+      ggplot(data = data.frame(x = c(1:ncol(data)), y = sortedValues),
+             mapping = aes(x = x, y = y)) +
+      geom_point() +
+      geom_line() +
+      geom_vline(xintercept = elbow, color = "red")
+    
+    plot(
+      gg + labs(
+        title = "Screeplot of gini importance",
+        plot_label,
+        x = "Features",
+        y = "Gini importance"
+      )
+    )
+    
+    featuresSortedByImportance <-
+      filterValues$data$name[order(filterValues$data$value, decreasing = T)]
+    
+    return(featuresSortedByImportance[1:elbow])
+  }
+```
+
+Apply filter based feature selection
+
+```{r}
+ace_vaxinpad_gini_features <-
+  giniImportanceFeatureSelection(ace_vaxinpad_train,
+                                 ace_vaxinpad_classes_train,
+                                 "ace vaxinpad")
+ace_vaxinpad_train_gini <-
+  subset(ace_vaxinpad_train, select = ace_vaxinpad_gini_features)
+ace_vaxinpad_test_gini <-
+  subset(ace_vaxinpad_test, select = ace_vaxinpad_gini_features)
+```
+
+Evaluation
+
+ACE VAXINPAD
+
+Original data set
+
+```{r}
+rf_ace_vaxinpad_original <-
+  parallelTraining(
+    data = ace_vaxinpad_train,
+    classes = ace_vaxinpad_classes_train,
+    model = "ranger",
+    metric = "ROC"
+  )
+
+rf_ace_vaxinpad_original_eval <- evalm(data.frame(
+  predict(rf_ace_vaxinpad_original,
+          ace_vaxinpad_test,
+          type = "prob"),
+  ace_vaxinpad_classes_test
+),
+plots = c("r", "pr"))
+```
+
+PCA-reduced data set (using % of total variance method)
+
+```{r}
+rf_ace_vaxinpad_pca_var <-
+  parallelTraining(
+    data = ace_vaxinpad_pca_var_train,
+    classes = ace_vaxinpad_classes_train,
+    model = "ranger",
+    metric = "ROC"
+  )
+
+rf_ace_vaxinpad_pca_var_eval <- evalm(data.frame(
+  predict(rf_ace_vaxinpad_pca_var,
+          ace_vaxinpad_pca_var_test,
+          type = "prob"),
+  ace_vaxinpad_classes_test
+),
+plots = c("r", "pr"))
+```
+
+PCA-reduced data set (using elbow method)
+
+```{r}
+rf_ace_vaxinpad_pca_elbow <-
+  parallelTraining(
+    data = ace_vaxinpad_pca_elbow_train,
+    classes = ace_vaxinpad_classes_train,
+    model = "ranger",
+    metric = "ROC"
+  )
+
+rf_ace_vaxinpad_pca_elbow_eval <- evalm(data.frame(
+  predict(
+    rf_ace_vaxinpad_pca_elbow,
+    ace_vaxinpad_pca_elbow_test,
+    type = "prob"
+  ),
+  ace_vaxinpad_classes_test
+),
+plots = c("r", "pr"))
+```
+
+Gini importance-reduced data set
+
+```{r}
+rf_ace_vaxinpad_gini <-
+  parallelTraining(
+    data = ace_vaxinpad_train_gini,
+    classes = ace_vaxinpad_classes_train,
+    model = "ranger",
+    metric = "ROC"
+  )
+
+rf_ace_vaxinpad_gini_eval <- evalm(data.frame(
+  predict(rf_ace_vaxinpad_gini,
+          ace_vaxinpad_test_gini,
+          type = "prob"),
+  ace_vaxinpad_classes_test
+),
+plots = c("r", "pr"))
+```
