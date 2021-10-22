@@ -1,4 +1,5 @@
 import os
+import pathlib
 import argparse
 import math
 import numpy as np
@@ -437,69 +438,54 @@ def main():
     image_help = 'An optional boolean argument. Default: False'
     padding_help = 'An optional character argument. Default: c'
     graph_help = 'An optional integer argument.'
-    output_help = '''An optional path-like argument. For parsed paths, the
-                     directory must exist beforehand. Default:
-                     ./CMANGOES_Results/'''
+
     output_default = os.path.join('.', 'CMANGOES_Results')
+    output_help = '''An optional path-like argument. For parsed paths, the
+                     directory must exist beforehand.
+                     Default: ''' + output_default
+
+    input_error = 'Input file path is bad or the file does not exist'
+    graph_error = '''Graph should be an integer >=1 and <=number of sequences
+                     in the input file'''
+    output_error = '''Output directory path is bad or the directory does not
+                      exist'''
 
     argument_parser = argparse.ArgumentParser(
         prog=program_name, description=program_description)
 
     # Adding arguments
-    argument_parser.add_argument('input_file', type=os.PathLike,
+    allowed_encodings = ['b', 'd']
+    allowed_paddings = ['c', 's']
+    allowed_levels = [1, 2, 3]
+
+    argument_parser.add_argument('input_file', type=pathlib.Path,
                                  help=input_help)
-    argument_parser.add_argument('encoding', type=ascii, help=encoding_help)
-    argument_parser.add_argument('--level', type=int, help=level_help)
-    argument_parser.add_argument('--image', action='store_false',
-                                 help=image_help)
-    argument_parser.add_argument('--padding', type=ascii, default='c',
-                                 help=padding_help)
+    argument_parser.add_argument('encoding', type=str, help=encoding_help,
+                                 choices=allowed_encodings)
+    argument_parser.add_argument('--level', type=int, help=level_help,
+                                 choices=allowed_levels)
+    argument_parser.add_argument('--image', default=False, help=image_help)
+    argument_parser.add_argument('--padding', type=str, default='c',
+                                 help=padding_help, choices=allowed_paddings)
     argument_parser.add_argument('--show_graph', type=int, help=graph_help)
-    argument_parser.add_argument('--output_dir', type=os.PathLike,
+    argument_parser.add_argument('--output_dir', type=pathlib.Path,
                                  help=output_help)
 
     # Parsing arguments
     arguments = argument_parser.parse_args()
 
-    print(arguments.input_file, arguments.encoding, arguments.level,
-          arguments.image, arguments.padding, arguments.graph,
-          arguments.output_dir)
-
-    # Argument inspection
-    allowed_encodings = ['b', 'd']
-    allowed_paddings = ['c', 's']
-    allowed_levels = [1, 2, 3]
-
-    input_error = 'Input file path is bad or the file does not exist'
-    encoding_error = '''Encoding must be either b (for binary) or d
-                        (for discretized)'''
-    level_error = 'Level must be 1, 2, or 3.'
-    padding_error = '''Padding must be either c (for centered) or s
-                       (for shifted)'''
-    graph_error = '''Graph should be an integer >=1 and
-                                  <=number of sequences in the input file'''
-    output_error = '''Output directory path is bad or the directory does not
-                      exist'''
-
+    # Additional argument inspection
     if not os.path.exists(arguments.input_file):
         argument_parser.error(input_error)
 
-    if arguments.encoding not in allowed_encodings:
-        argument_parser.error(encoding_error)
-
-    if arguments.level not in allowed_levels:
-        argument_parser.error(level_error)
-
     # TODO: Implement the check for <= num_of_sequences in the input file
-    if arguments.graph <= 0:
-        argument_parser.error(graph_error)
+    if arguments.show_graph is not None:
+        if arguments.show_graph <= 0:
+            argument_parser.error(graph_error)
 
-    if arguments.image:
-        if arguments.padding not in allowed_paddings:
-            argument_parser.error(padding_error)
-
-    if not os.path.exists(arguments.output_dir):
-        argument_parser.error(output_error)
+    if arguments.output_dir is not None:
+        if not os.path.exists(arguments.output_dir):
+            argument_parser.error(output_error)
 
     return None
 
