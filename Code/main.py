@@ -1,7 +1,5 @@
 import os
 import math
-# import time
-# import subprocess
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -9,7 +7,27 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from pysmiles import read_smiles
 from IPython.display import clear_output
-# from Bio import SeqIO
+from openbabel import openbabel
+from Bio import SeqIO
+
+
+def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
+    obConversion = openbabel.OBConversion()
+    obConversion.SetInAndOutFormats('fasta', 'smi')
+
+    mol = openbabel.OBMol()
+
+    with open(input_fasta_file_path, 'r') as input_file,\
+         open(output_smiles_file_path, 'a') as output_file:
+        for i, fasta_string in enumerate(SeqIO.parse(input_file, 'fasta')):
+            obConversion.ReadString(mol, str(fasta_string.seq))
+            output_smiles_string = obConversion.WriteString(mol)
+            # print(i+1, '-', output_smiles_string)
+            output_file.write(output_smiles_string)
+
+    print('Successfully converted FASTA into SMILES.')
+
+    return None
 
 
 def create_graph_for_molecule(mol):
@@ -26,7 +44,7 @@ def get_labels_from_elements(elements):
     return labels
 
 
-# TODO: Make this returnable
+# This function was used for testing purposes
 def plot_molecule_graph(G, labels):
     pos = nx.spring_layout(G)
     nx.draw(G, pos=pos, node_size=400)
@@ -100,7 +118,8 @@ def shift_matrix(m, target_dim):
 def get_unique_atoms(mol):
     atoms = mol.nodes(data="element")
     unique_atoms = set()
-    [unique_atoms.add(atom_tuple[1]) for atom_tuple in atoms]
+    for atom_tuple in atoms:
+        unique_atoms.add(atom_tuple[1])
 
     return unique_atoms
 
@@ -189,7 +208,6 @@ def normalize_encodings(dummy_encodings, names, center_encoding=True):
 
 
 # Function to generate images from normalized encoding
-# TODO: make it returnable
 def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
                                 folder_name="encoding_images",
                                 print_progress=False):
@@ -271,7 +289,6 @@ def encode_molecules(
 
 
 # CSV export of normalized encoding
-# TODO: make it returnable
 def csv_export(normalized_encoding, classes=pd.DataFrame(),
                output_path="encoding.csv"):
     encoding_as_df = pd.DataFrame.from_dict(
@@ -290,7 +307,6 @@ def csv_export(normalized_encoding, classes=pd.DataFrame(),
 
 # Generate encodings and export CSVs
 # Helper function to generate all permutatations of encodings
-# TODO: make it returnable
 def generate_all_encodings(smiles, names, data_set_identifier,
                            classes=pd.DataFrame()):
 
