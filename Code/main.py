@@ -438,13 +438,17 @@ def main():
     image_help = 'An optional boolean argument. Default: False'
     padding_help = 'An optional character argument. Default: c'
     graph_help = 'An optional integer argument.'
-
-    output_default = os.path.join('.', 'CMANGOES_Results')
+    output_default_path = os.path.join('.', 'CMANGOES_Results')
     output_help = '''An optional path-like argument. For parsed paths, the
                      directory must exist beforehand.
-                     Default: ''' + output_default
+                     Default: ''' + output_default_path
 
     input_error = 'Input file path is bad or the file does not exist'
+    input_extension_error = '''The input file should be FASTA or SMILES.
+                               Allowed extensions for FASTA: .fa, .fasta.
+                               Allowed extensions for SMILES: .smi, .smiles.
+                               The tool also supports any uppercase combination
+                               of the aforementioned extensions.'''
     graph_error = '''Graph should be an integer >=1 and <=number of sequences
                      in the input file'''
     output_error = '''Output directory path is bad or the directory does not
@@ -487,6 +491,28 @@ def main():
         if not os.path.exists(arguments.output_dir):
             argument_parser.error(output_error)
 
+    # Create the results directory
+    try:
+        os.mkdir(output_default_path)
+    except FileExistsError():
+        pass
+
+    # Open input file and check the format
+    input_file_name, input_file_extension = os.path.splitext(
+        arguments.input_file)
+
+    input_file_extension = input_file_extension.strip().lower()
+    input_smiles_path = None
+
+    if input_file_extension in ['smi', 'smiles']:
+        input_smiles_path = arguments.input_file
+    elif input_file_extension in ['fa', 'fasta']:
+        input_smiles_path = os.path.join(
+            output_default_path, 'resulting_smiles.smi')
+        convert_fasta_to_smiles(arguments.input_file, input_smiles_path)
+    else:
+        argument_parser.error(input_extension_error)
+
     return None
 
 
@@ -507,7 +533,7 @@ def main():
 # - smiles as output written to file (iff fasta used as input) SMI or smiles
 # - binary or discretized files CSV
 # - images filename as index from encoding CSV
-# - log 
+# - log
 
 
 if __name__ == '__main__':
