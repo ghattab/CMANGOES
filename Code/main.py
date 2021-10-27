@@ -1,4 +1,5 @@
 import os
+import errno
 import pathlib
 import argparse
 import math
@@ -494,8 +495,11 @@ def main():
     # Create the results directory
     try:
         os.mkdir(output_default_path)
-    except FileExistsError():
-        pass
+    except Exception as e:
+        if e.errno == errno.EEXIST:
+            pass
+        else:
+            raise
 
     # Open input file and check the format
     input_file_name, input_file_extension = os.path.splitext(
@@ -504,9 +508,9 @@ def main():
     input_file_extension = input_file_extension.strip().lower()
     input_smiles_path = None
 
-    if input_file_extension in ['smi', 'smiles']:
+    if input_file_extension in ['.smi', '.smiles']:
         input_smiles_path = arguments.input_file
-    elif input_file_extension in ['fa', 'fasta']:
+    elif input_file_extension in ['.fa', '.faa', '.fasta']:
         input_smiles_path = os.path.join(
             output_default_path, 'resulting_smiles.smi')
         convert_fasta_to_smiles(arguments.input_file, input_smiles_path)
