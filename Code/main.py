@@ -19,6 +19,7 @@ def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
     obConversion.SetInAndOutFormats('fasta', 'smi')
 
     mol = openbabel.OBMol()
+    num_of_lines = 0
 
     with open(input_fasta_file_path, 'r') as input_file,\
          open(output_smiles_file_path, 'a') as output_file:
@@ -27,10 +28,19 @@ def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
             output_smiles_string = obConversion.WriteString(mol)
             # print(i+1, '-', output_smiles_string)
             output_file.write(output_smiles_string)
+            num_of_lines = max(num_of_lines, i+1)
 
     print('Successfully converted FASTA into SMILES.')
 
-    return None
+    return num_of_lines
+
+
+def get_num_of_lines(smiles_path):
+    num_of_lines = 0
+    with open(smiles_path, 'r') as input_file:
+        num_of_lines = len(input_file.readlines())
+
+    return num_of_lines
 
 
 def create_graph_for_molecule(mol):
@@ -246,7 +256,13 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
 
         dirname = os.path.join(os.path.realpath("."), folder_name)
         if not os.path.exists(dirname):
-            os.makedirs(dirname)
+            try:
+                os.makedirs(dirname)
+            except Exception as e:
+                if e.errno == errno.EEXIST:
+                    pass
+                else:
+                    raise
         # filename = dirname + ("\{}.png".format(name))
         filename = os.path.join(dirname, name)
 
@@ -315,28 +331,28 @@ def generate_all_encodings(smiles, names, data_set_identifier,
 
     # Paths were hard-coded before. Below is the proper definition
     binary_centered_out_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier,
+        "..", "Images", data_set_identifier, data_set_identifier +
         "_binary_centered_imgs")
     binary_centered_csv_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier,
+        "..", "Data", data_set_identifier, data_set_identifier +
         "_binary_centered.csv")
     binary_shifted_out_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier,
+        "..", "Images", data_set_identifier, data_set_identifier +
         "_binary_shifted_imgs")
     binary_shifted_csv_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier,
+        "..", "Data", data_set_identifier, data_set_identifier +
         "_binary_shifted.csv")
     discretized_centered_out_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier,
+        "..", "Images", data_set_identifier, data_set_identifier +
         "_discretized_centered_imgs")
     discretized_centered_csv_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier,
+        "..", "Data", data_set_identifier, data_set_identifier +
         "_discretized_centered.csv")
     discretized_shifted_out_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier,
+        "..", "Images", data_set_identifier, data_set_identifier +
         "_discretized_shifted_imgs")
     discretized_shifted_csv_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier,
+        "..", "Data", data_set_identifier, data_set_identifier +
         "_discretized_shifted.csv")
 
     print("Generating binary centered encoding...")
@@ -439,10 +455,11 @@ def main():
     image_help = 'An optional boolean argument. Default: False'
     padding_help = 'An optional character argument. Default: c'
     graph_help = 'An optional integer argument.'
-    output_default_path = os.path.join('.', 'CMANGOES_Results')
+    output_dir_name = 'CMANGOES_Results'
+    output_path = os.path.join('.', output_dir_name)
     output_help = '''An optional path-like argument. For parsed paths, the
                      directory must exist beforehand.
-                     Default: ''' + output_default_path
+                     Default: ''' + output_path
 
     input_error = 'Input file path is bad or the file does not exist'
     input_extension_error = '''The input file should be FASTA or SMILES.
@@ -461,19 +478,21 @@ def main():
     # Adding arguments
     allowed_encodings = ['b', 'd']
     allowed_paddings = ['c', 's']
+    allowed_images = [0, 1]
     allowed_levels = [1, 2, 3]
 
     argument_parser.add_argument('input_file', type=pathlib.Path,
                                  help=input_help)
     argument_parser.add_argument('encoding', type=str, help=encoding_help,
-                                 choices=allowed_encodings)
+                                 choices=allowed_encodings, default='b')
     argument_parser.add_argument('--level', type=int, help=level_help,
                                  choices=allowed_levels)
-    argument_parser.add_argument('--image', default=False, help=image_help)
+    argument_parser.add_argument('--image', type=int, help=image_help,
+                                 choices=allowed_images, default=0)
     argument_parser.add_argument('--padding', type=str, default='c',
                                  help=padding_help, choices=allowed_paddings)
     argument_parser.add_argument('--show_graph', type=int, help=graph_help)
-    argument_parser.add_argument('--output_dir', type=pathlib.Path,
+    argument_parser.add_argument('--output_path', type=pathlib.Path,
                                  help=output_help)
 
     # Parsing arguments
@@ -488,34 +507,68 @@ def main():
         if arguments.show_graph <= 0:
             argument_parser.error(graph_error)
 
-    if arguments.output_dir is not None:
+    if arguments.output_path is not None:
         if not os.path.exists(arguments.output_dir):
             argument_parser.error(output_error)
+        else:
+            # Output path is the user-settable path
+            output_path = os.path.join(arguments.output_path, output_dir_name)
+    else:
+        # Output path is the default path
+        output_path = os.path.join('.', output_dir_name)
 
     # Create the results directory
     try:
-        os.mkdir(output_default_path)
+        os.mkdir(output_path)
     except Exception as e:
         if e.errno == errno.EEXIST:
             pass
         else:
             raise
 
-    # Open input file and check the format
+    # STEP 1: Open the input file and check the format. Also get the number
+    # of sequences in a file
+    # Do conversion to SMILES format if FASTA is provided as an input
     input_file_name, input_file_extension = os.path.splitext(
         arguments.input_file)
 
     input_file_extension = input_file_extension.strip().lower()
     input_smiles_path = None
+    num_of_lines = None
 
     if input_file_extension in ['.smi', '.smiles']:
         input_smiles_path = arguments.input_file
+        num_of_lines = get_num_of_lines(input_smiles_path)
     elif input_file_extension in ['.fa', '.faa', '.fasta']:
         input_smiles_path = os.path.join(
-            output_default_path, 'resulting_smiles.smi')
-        convert_fasta_to_smiles(arguments.input_file, input_smiles_path)
+            output_path, 'resulting_smiles.smi')
+        num_of_lines = convert_fasta_to_smiles(
+            arguments.input_file, input_smiles_path)
     else:
         argument_parser.error(input_extension_error)
+
+    # STEP 2: Define important variables
+    # TODO: Implement level variable and plot molecule variable
+    binary_encoding = True if arguments.encoding == 'b' else False
+    center_encoding = True if arguments.padding == 'c' else False
+    generate_images = True if arguments.image == 1 else False
+    output_distinct_name = 'binary_' if arguments.encoding == 'b'\
+        else 'discretized_'
+    output_distinct_name += 'centered_' if arguments.padding == 'c'\
+        else 'shifted_'
+    output_distinct_name += 'with_images' if arguments.image == 1\
+        else 'without_images'
+
+    # STEP 3: Encode molecules and possibly generate images
+    finalized_encoding = encode_molecules(
+        input_smiles_path, num_of_lines, binary_encoding=binary_encoding,
+        center_encoding=center_encoding, plot_molecule=False,
+        print_progress=False, generate_images=generate_images,
+        output_path=os.path.join(
+            output_path, output_distinct_name + '_Images'))
+
+    csv_export(finalized_encoding, output_path=os.path.join(
+        output_path, output_distinct_name + '_encoding.csv'))
 
     return None
 
@@ -525,7 +578,7 @@ def main():
 # - smiles
 
 # Argument
-# - level 1 :3
+# - level 1:3
 # - encoding b: binary and d: discretized
 # - image 1,0
 # - padding c: centered and s: shifted
