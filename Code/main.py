@@ -19,7 +19,7 @@ def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
     obConversion.SetInAndOutFormats('fasta', 'smi')
 
     mol = openbabel.OBMol()
-    num_of_lines = 0
+    smiles_list = []
 
     with open(input_fasta_file_path, 'r') as input_file,\
          open(output_smiles_file_path, 'a') as output_file:
@@ -27,12 +27,15 @@ def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
             obConversion.ReadString(mol, str(fasta_string.seq))
             output_smiles_string = obConversion.WriteString(mol)
             # print(i+1, '-', output_smiles_string)
+            for char in ['[', ']', '.']:
+                output_smiles_string = output_smiles_string.replace(char, '')
+
             output_file.write(output_smiles_string)
-            num_of_lines = max(num_of_lines, i+1)
+            smiles_list.append(output_smiles_string)
 
     print('Successfully converted FASTA into SMILES.')
 
-    return num_of_lines
+    return smiles_list
 
 
 def get_num_of_lines(smiles_path):
@@ -264,7 +267,7 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
                 else:
                     raise
         # filename = dirname + ("\{}.png".format(name))
-        filename = os.path.join(dirname, name)
+        filename = os.path.join(dirname, str(name) + '.png')
 
         if binary_encoding:
             cmap = colors.ListedColormap(["lightgrey", "black"])
@@ -282,7 +285,7 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
         plt.close()
 
     # print("Saved images to folder ./{}".format(folder_name))
-    print("Saved images to folder ." + os.path.sep() + folder_name)
+    print("Saved images to folder ." + os.path.sep + folder_name)
 
     return None
 
@@ -304,6 +307,8 @@ def encode_molecules(
             binary_encoding=binary_encoding, folder_name=output_path,
             print_progress=print_progress)
 
+    print('Successfully encoded molecules.')
+
     return normalized_encoding
 
 
@@ -319,7 +324,8 @@ def csv_export(normalized_encoding, classes=pd.DataFrame(),
         encoding_as_df = encoding_as_df.join(classes)
 
     encoding_as_df.to_csv(output_path, index=False)
-    print("Exported to ", output_path)
+
+    print('Successfully exported encodings to ', output_path)
 
     return None
 
@@ -508,7 +514,7 @@ def main():
             argument_parser.error(graph_error)
 
     if arguments.output_path is not None:
-        if not os.path.exists(arguments.output_dir):
+        if not os.path.exists(arguments.output_path):
             argument_parser.error(output_error)
         else:
             # Output path is the user-settable path
@@ -534,6 +540,7 @@ def main():
 
     input_file_extension = input_file_extension.strip().lower()
     input_smiles_path = None
+    smiles_list = None
     num_of_lines = None
 
     if input_file_extension in ['.smi', '.smiles']:
@@ -542,8 +549,9 @@ def main():
     elif input_file_extension in ['.fa', '.faa', '.fasta']:
         input_smiles_path = os.path.join(
             output_path, 'resulting_smiles.smi')
-        num_of_lines = convert_fasta_to_smiles(
+        smiles_list = convert_fasta_to_smiles(
             arguments.input_file, input_smiles_path)
+        num_of_lines = len(smiles_list)
     else:
         argument_parser.error(input_extension_error)
 
@@ -558,10 +566,11 @@ def main():
         else 'shifted_'
     output_distinct_name += 'with_images' if arguments.image == 1\
         else 'without_images'
+    names = range(1, num_of_lines + 1)
 
     # STEP 3: Encode molecules and possibly generate images
     finalized_encoding = encode_molecules(
-        input_smiles_path, num_of_lines, binary_encoding=binary_encoding,
+        smiles_list, names, binary_encoding=binary_encoding,
         center_encoding=center_encoding, plot_molecule=False,
         print_progress=False, generate_images=generate_images,
         output_path=os.path.join(
