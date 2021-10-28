@@ -101,6 +101,9 @@ def encode_molecule(mol, plot_molecule=None, folder_name='graph'):
         neighbors_elements = [elements[key] for key in neighbors_idx]
         neighborhoods["level{}".format(idx)] = pd.Series(neighbors_elements)
 
+    # TODO: To include level argument, one should only return one specific
+    # part of the neighborhoods dict, and convert that to pandas DataFrame
+
     return pd.DataFrame.from_dict(neighborhoods)
 
 
@@ -617,26 +620,6 @@ def main():
     print('============================================================')
 
     return None
-
-
-# Input
-# - fasta
-# - smiles
-
-# Argument
-# - level 1:3
-# - encoding b: binary and d: discretized
-# - image 1,0
-# - padding c: centered and s: shifted
-# - user path for output write
-# - show-graph id : show intermediary graph for molecule index
-
-# Output
-
-# - smiles as output written to file (iff fasta used as input) SMI or smiles
-# - binary or discretized files CSV
-# - images filename as index from encoding CSV
-# - log
 
 
 if __name__ == '__main__':
