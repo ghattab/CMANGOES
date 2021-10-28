@@ -60,6 +60,7 @@ def get_labels_from_elements(elements):
     return labels
 
 
+# TODO: Make the output graph nicer and sparser
 def plot_molecule_graph(G, labels, folder_name='graph', graph_num=None):
 
     dirname = os.path.join(os.path.realpath("."), folder_name)
@@ -72,7 +73,7 @@ def plot_molecule_graph(G, labels, folder_name='graph', graph_num=None):
             else:
                 raise
 
-    filename = os.path.join(dirname, str(graph_num) + '.png')
+    filename = os.path.join(dirname, str(graph_num) + '_graph.png')
 
     pos = nx.spring_layout(G)
     nx.draw(G, pos=pos, node_size=400)
@@ -305,7 +306,7 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
         plt.close()
 
     # print("Saved images to folder ./{}".format(folder_name))
-    print("Saved images to folder ." + os.path.sep + folder_name)
+    print('Saved images to folder ' + folder_name)
 
     return None
 
@@ -552,9 +553,7 @@ def main():
         else:
             raise
 
-    # STEP 1: Open the input file and check the format. Also get the number
-    # of sequences in a file
-    # Do conversion to SMILES format if FASTA is provided as an input
+    # STEP 1: Open the input file and check the format
     input_file_name, input_file_extension = os.path.splitext(
         arguments.input_file)
 
@@ -563,27 +562,17 @@ def main():
     smiles_list = None
     num_of_lines = None
 
-    if input_file_extension in ['.smi', '.smiles']:
-        input_smiles_path = arguments.input_file
-        num_of_lines = get_num_of_lines(input_smiles_path)
-    elif input_file_extension in ['.fa', '.faa', '.fasta']:
-        input_smiles_path = os.path.join(
-            output_path, 'resulting_smiles.smi')
-        smiles_list = convert_fasta_to_smiles(
-            arguments.input_file, input_smiles_path)
-        num_of_lines = len(smiles_list)
-    else:
+    if input_file_extension not in ['.smi', '.smiles', '.fa', '.faa',
+                                    '.fasta']:
         argument_parser.error(input_extension_error)
 
-    # STEP 2: One more check if show_graph is set to 1
-    # This step checks if the user-inputted number is lower than the number
-    # of lines in the SMILES or FASTA file
-    if arguments.show_graph is not None:
-        if arguments.show_graph > num_of_lines:
-            argument_parser.error(graph_error)
+    # STEP 2: Define important variables. Also get the number of sequences in
+    # a file. Do conversion to SMILES format if FASTA is provided as an input
+    # TODO: Implement level variable
+    print('============================================================')
+    print('                          CMANGOES                          ')
+    print('============================================================')
 
-    # STEP 3: Define important variables
-    # TODO: Implement level variable and plot molecule variable
     binary_encoding = True if arguments.encoding == 'b' else False
     center_encoding = True if arguments.padding == 'c' else False
     generate_images = True if arguments.image == 1 else False
@@ -593,7 +582,25 @@ def main():
         else 'shifted_'
     output_distinct_name += 'with_images' if arguments.image == 1\
         else 'without_images'
+
+    if input_file_extension in ['.smi', '.smiles']:
+        input_smiles_path = arguments.input_file
+        num_of_lines = get_num_of_lines(input_smiles_path)
+    elif input_file_extension in ['.fa', '.faa', '.fasta']:
+        input_smiles_path = os.path.join(
+            output_path, output_distinct_name + '_resulting_smiles.smi')
+        smiles_list = convert_fasta_to_smiles(
+            arguments.input_file, input_smiles_path)
+        num_of_lines = len(smiles_list)
+
     names = range(1, num_of_lines + 1)
+
+    # STEP 3: One more check if show_graph is set to 1
+    # This step checks if the user-inputted number is lower than the number
+    # of lines in the SMILES or FASTA file
+    if arguments.show_graph is not None:
+        if arguments.show_graph > num_of_lines:
+            argument_parser.error(graph_error)
 
     # STEP 4: Encode and export molecules
     # Possibly generate images and the graph, if selected
@@ -606,6 +613,8 @@ def main():
 
     csv_export(finalized_encoding, output_path=os.path.join(
         output_path, output_distinct_name + '_encoding.csv'))
+
+    print('============================================================')
 
     return None
 
