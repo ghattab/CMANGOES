@@ -60,23 +60,37 @@ def get_labels_from_elements(elements):
     return labels
 
 
-# This function was used for testing purposes
-def plot_molecule_graph(G, labels):
+def plot_molecule_graph(G, labels, folder_name='graph', graph_num=None):
+
+    dirname = os.path.join(os.path.realpath("."), folder_name)
+    if not os.path.exists(dirname):
+        try:
+            os.makedirs(dirname)
+        except Exception as e:
+            if e.errno == errno.EEXIST:
+                pass
+            else:
+                raise
+
+    filename = os.path.join(dirname, str(graph_num) + '.png')
+
     pos = nx.spring_layout(G)
     nx.draw(G, pos=pos, node_size=400)
     nx.draw_networkx_labels(G, pos, labels, font_size=10)
-    plt.show()
+    plt.savefig(filename)
+    plt.close()
 
     return None
 
 
-def encode_molecule(mol, plot_molecule=False):
+def encode_molecule(mol, plot_molecule=None, folder_name='graph'):
     elements = mol.nodes(data="element")
     G = create_graph_for_molecule(mol)
 
-    if (plot_molecule):
+    if plot_molecule is not None:
         labels = get_labels_from_elements(elements)
-        plot_molecule_graph(G, labels)
+        plot_molecule_graph(G, labels, folder_name=folder_name,
+                            graph_num=plot_molecule)
 
     carbons = [c for c in elements if c[1].lower() == "c"]
     neighborhoods = {}
@@ -142,7 +156,7 @@ def get_unique_atoms(mol):
 
 # Function to generate dummy encoding of smiles strings
 def dummy_encode_molecules(smiles, binary_encoding=True, print_progress=False,
-                           plot_molecule=False):
+                           plot_molecule=None, folder_name='graph'):
     res = []
     number_of_elements = len(smiles)
 
@@ -152,7 +166,7 @@ def dummy_encode_molecules(smiles, binary_encoding=True, print_progress=False,
     if print_progress:
         progress = 0
 
-    for molecule in smiles:
+    for i, molecule in enumerate(smiles):
         if print_progress:
             clear_output(wait=True)
             progress += 1
@@ -164,7 +178,13 @@ def dummy_encode_molecules(smiles, binary_encoding=True, print_progress=False,
         if not binary_encoding:
             unique_atoms.update(get_unique_atoms(mol))
 
-        encoding = encode_molecule(mol, plot_molecule=plot_molecule)
+        if plot_molecule is not None and plot_molecule == i+1:
+            encoding = encode_molecule(
+                mol, plot_molecule=plot_molecule, folder_name=folder_name)
+        else:
+            encoding = encode_molecule(
+                mol, plot_molecule=None, folder_name=folder_name)
+
         dummy_encoding = pd.get_dummies(encoding)
 
         if not binary_encoding:
@@ -293,12 +313,13 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
 # Wrapper function for dummy, normalize, image generation (optional)
 def encode_molecules(
         smiles, names, binary_encoding=True, center_encoding=True,
-        plot_molecule=False, print_progress=False, generate_images=False,
+        plot_molecule=None, print_progress=False, generate_images=False,
         output_path="encoding_images"):
 
     dummies = dummy_encode_molecules(
         smiles=smiles, binary_encoding=binary_encoding,
-        print_progress=print_progress, plot_molecule=plot_molecule)
+        print_progress=print_progress, plot_molecule=plot_molecule,
+        folder_name=output_path)
     normalized_encoding = normalize_encodings(
         dummy_encodings=dummies, names=names, center_encoding=center_encoding)
     if generate_images:
@@ -508,7 +529,6 @@ def main():
     if not os.path.exists(arguments.input_file):
         argument_parser.error(input_error)
 
-    # TODO: Implement the check for <= num_of_sequences in the input file
     if arguments.show_graph is not None:
         if arguments.show_graph <= 0:
             argument_parser.error(graph_error)
@@ -555,7 +575,14 @@ def main():
     else:
         argument_parser.error(input_extension_error)
 
-    # STEP 2: Define important variables
+    # STEP 2: One more check if show_graph is set to 1
+    # This step checks if the user-inputted number is lower than the number
+    # of lines in the SMILES or FASTA file
+    if arguments.show_graph is not None:
+        if arguments.show_graph > num_of_lines:
+            argument_parser.error(graph_error)
+
+    # STEP 3: Define important variables
     # TODO: Implement level variable and plot molecule variable
     binary_encoding = True if arguments.encoding == 'b' else False
     center_encoding = True if arguments.padding == 'c' else False
@@ -568,10 +595,11 @@ def main():
         else 'without_images'
     names = range(1, num_of_lines + 1)
 
-    # STEP 3: Encode molecules and possibly generate images
+    # STEP 4: Encode and export molecules
+    # Possibly generate images and the graph, if selected
     finalized_encoding = encode_molecules(
         smiles_list, names, binary_encoding=binary_encoding,
-        center_encoding=center_encoding, plot_molecule=False,
+        center_encoding=center_encoding, plot_molecule=arguments.show_graph,
         print_progress=False, generate_images=generate_images,
         output_path=os.path.join(
             output_path, output_distinct_name + '_Images'))
