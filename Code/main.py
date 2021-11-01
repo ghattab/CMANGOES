@@ -38,12 +38,12 @@ def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
     return smiles_list
 
 
-def get_num_of_lines(smiles_path):
-    num_of_lines = 0
+def get_smiles_list(smiles_path):
+    smiles_list = []
     with open(smiles_path, 'r') as input_file:
-        num_of_lines = len(input_file.readlines())
+        smiles_list = input_file.readlines()
 
-    return num_of_lines
+    return smiles_list
 
 
 def create_graph_for_molecule(mol):
@@ -60,7 +60,7 @@ def get_labels_from_elements(elements):
     return labels
 
 
-# TODO: Make the output graph nicer and sparser
+# TODO: Low-priority. Make the output graph nicer and sparser
 def plot_molecule_graph(G, labels, folder_name='graph', graph_num=None):
 
     dirname = os.path.join(os.path.realpath("."), folder_name)
@@ -99,10 +99,10 @@ def encode_molecule(mol, plot_molecule=None, folder_name='graph'):
     for idx, c in carbons:
         neighbors_idx = list(G[idx].keys())
         neighbors_elements = [elements[key] for key in neighbors_idx]
-        neighborhoods["level{}".format(idx)] = pd.Series(neighbors_elements)
+        neighborhoods["i {}".format(idx)] = pd.Series(neighbors_elements)
 
-    # TODO: To include level argument, one should only return one specific
-    # part of the neighborhoods dict, and convert that to pandas DataFrame
+    # TODO: Make an endpoint for depth analysis (neighborhood)
+    # print('\n', pd.DataFrame.from_dict(neighborhoods), '\n')
 
     return pd.DataFrame.from_dict(neighborhoods)
 
@@ -588,14 +588,14 @@ def main():
 
     if input_file_extension in ['.smi', '.smiles']:
         input_smiles_path = arguments.input_file
-        num_of_lines = get_num_of_lines(input_smiles_path)
+        smiles_list = get_smiles_list(input_smiles_path)
     elif input_file_extension in ['.fa', '.faa', '.fasta']:
         input_smiles_path = os.path.join(
             output_path, output_distinct_name + '_resulting_smiles.smi')
         smiles_list = convert_fasta_to_smiles(
             arguments.input_file, input_smiles_path)
-        num_of_lines = len(smiles_list)
 
+    num_of_lines = len(smiles_list)
     names = range(1, num_of_lines + 1)
 
     # STEP 3: One more check if show_graph is set to 1
