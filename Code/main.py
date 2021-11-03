@@ -1,5 +1,6 @@
 import os
 import errno
+import shutil
 import pathlib
 import argparse
 import math
@@ -33,7 +34,7 @@ def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
             output_file.write(output_smiles_string)
             smiles_list.append(output_smiles_string)
 
-    print('Successfully converted FASTA into SMILES.')
+    print('Successfully converted FASTA into SMILES\n')
 
     return smiles_list
 
@@ -96,13 +97,32 @@ def encode_molecule(mol, plot_molecule=None, folder_name='graph'):
     carbons = [c for c in elements if c[1].lower() == "c"]
     neighborhoods = {}
 
-    for idx, c in carbons:
-        neighbors_idx = list(G[idx].keys())
-        neighbors_elements = [elements[key] for key in neighbors_idx]
-        neighborhoods["i {}".format(idx)] = pd.Series(neighbors_elements)
+    parent_child_dict = dict.fromkeys(carbons)
 
-    # TODO: Make an endpoint for depth analysis (neighborhood)
-    # print('\n', pd.DataFrame.from_dict(neighborhoods), '\n')
+    # Traverse all carbons and collect neighbors
+    for carbon_node in carbons:
+        neighbors_idx = list(G[carbon_node[0]].keys())
+        neighbors_elements = [elements[key] for key in neighbors_idx]
+
+        neighbors = list(zip(neighbors_idx, neighbors_elements))
+        parent_child_dict[carbon_node] = neighbors
+
+    final_dict = dict()
+    # Traverse all carbons' neighbors and collect their neighbors
+    for carbon_node in parent_child_dict:
+        # Looking at every neighbor seperately
+        for carbon_neighbor in parent_child_dict[carbon_node]:
+            if carbon_neighbor not in carbons:
+                neighbors_idx = list(G[carbon_neighbor[0]].keys())
+                neighbors_elements = [elements[key] for key in neighbors_idx]
+
+                neighbors = list(zip(neighbors_idx, neighbors_elements))
+                final_dict[carbon_node] = parent_child_dict[carbon_node]\
+                    + neighbors
+
+    for carbon_node in final_dict:
+        neighborhoods["atom_{}".format(carbon_node[0])] = pd.Series(
+            [node[1] for node in final_dict[carbon_node]])
 
     return pd.DataFrame.from_dict(neighborhoods)
 
@@ -228,12 +248,11 @@ def normalize_encodings(dummy_encodings, names, center_encoding=True):
         squared_matrices.append(
             np.array(encoding_squared).reshape(dimension, dimension))
 
+    print('Maximum dimension is', max_dim, 'x', max_dim)
     if center_encoding:
-        print('''Maximum dimension is {}x{}, centering smaller matrices in
-                 {}x{} grid...'''.format(max_dim, max_dim, max_dim, max_dim))
+        print('Centering smaller matrices in', max_dim, 'x', max_dim, '\n')
     else:
-        print('''Maximum dimension is {}x{}, shifting smaller encoding to match
-                 maximum dimension...'''.format(max_dim, max_dim))
+        print('Shifting smaller encoding to match maximum dimension\n')
 
     for i in range(len(dummy_encodings)):
         if center_encoding:
@@ -309,7 +328,7 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
         plt.close()
 
     # print("Saved images to folder ./{}".format(folder_name))
-    print('Saved images to folder ' + folder_name)
+    print('Saved images to folder ' + folder_name, '\n')
 
     return None
 
@@ -332,7 +351,7 @@ def encode_molecules(
             binary_encoding=binary_encoding, folder_name=output_path,
             print_progress=print_progress)
 
-    print('Successfully encoded molecules.')
+    print('Successfully encoded molecules\n')
 
     return normalized_encoding
 
@@ -350,7 +369,7 @@ def csv_export(normalized_encoding, classes=pd.DataFrame(),
 
     encoding_as_df.to_csv(output_path, index=False)
 
-    print('Successfully exported encodings to ', output_path)
+    print('Successfully exported encodings to ', output_path, '\n')
 
     return None
 
@@ -360,30 +379,47 @@ def csv_export(normalized_encoding, classes=pd.DataFrame(),
 def generate_all_encodings(smiles, names, data_set_identifier,
                            classes=pd.DataFrame()):
 
-    # Paths were hard-coded before. Below is the proper definition
+    # Hard-coded paths for testing purposes
+    root_test_path = os.path.join('..', 'Test', 'Paper')
+    images_test_path = os.path.join(root_test_path, 'Images')
+    data_test_path = os.path.join(root_test_path, 'Data')
+    # Create the results directory
+    important_dirs = [root_test_path, images_test_path, data_test_path,
+                      os.path.join(images_test_path, data_set_identifier),
+                      os.path.join(data_test_path, data_set_identifier)]
+
+    for i in important_dirs:
+        try:
+            os.mkdir(i)
+        except Exception as e:
+            if e.errno == errno.EEXIST:
+                pass
+            else:
+                raise
+
     binary_centered_out_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier +
+        images_test_path, data_set_identifier, data_set_identifier +
         "_binary_centered_imgs")
     binary_centered_csv_path = os.path.join(
-        "..", "Data", data_set_identifier, data_set_identifier +
+        data_test_path, data_set_identifier, data_set_identifier +
         "_binary_centered.csv")
     binary_shifted_out_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier +
+        images_test_path, data_set_identifier, data_set_identifier +
         "_binary_shifted_imgs")
     binary_shifted_csv_path = os.path.join(
-        "..", "Data", data_set_identifier, data_set_identifier +
+        data_test_path, data_set_identifier, data_set_identifier +
         "_binary_shifted.csv")
     discretized_centered_out_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier +
+        images_test_path, data_set_identifier, data_set_identifier +
         "_discretized_centered_imgs")
     discretized_centered_csv_path = os.path.join(
-        "..", "Data", data_set_identifier, data_set_identifier +
+        data_test_path, data_set_identifier, data_set_identifier +
         "_discretized_centered.csv")
     discretized_shifted_out_path = os.path.join(
-        "..", "Images", data_set_identifier, data_set_identifier +
+        images_test_path, data_set_identifier, data_set_identifier +
         "_discretized_shifted_imgs")
     discretized_shifted_csv_path = os.path.join(
-        "..", "Data", data_set_identifier, data_set_identifier +
+        data_test_path, data_set_identifier, data_set_identifier +
         "_discretized_shifted.csv")
 
     print("Generating binary centered encoding...")
@@ -474,18 +510,31 @@ def create_datasets():
     return None
 
 
+# TODO: Implement level argument
 def main():
-
     program_name = 'cmangoes'
     program_description = '''cmangoes: Carbon-based Multi-level Atomic
                              Neighborhood Encodings'''
 
     input_help = 'A required path-like argument.'
-    encoding_help = 'A required character argument.'
-    level_help = 'An optional integer argument.'
-    image_help = 'An optional boolean argument. Default: False'
-    padding_help = 'An optional character argument. Default: c'
-    graph_help = 'An optional integer argument.'
+    encoding_help = '''A required character argument that specifies an
+                       encoding to be used. b is for binary, d is for
+                       discretized.'''
+    padding_help = '''A required character argument that specifies a
+                       padding to be used. c is for centered, s is for
+                       shifted.'''
+    # level_help = 'An optional integer argument.'
+    image_help = '''An optional integer argument that specifies whether
+                     images should be created or not. Default: 0 (without
+                     images)'''
+    graph_help = '''An optional integer argument that specifies whether
+                    a graph representation should be created or not. Default: 0
+                    (without representation). The user should provide the
+                    number between 1 and the number of sequences in the parsed
+                    input file. Example: if number 5 is parsed for this option,
+                    a graph representation of the 5th sequence of the input
+                    file shall be created and placed in the corresponding
+                    images folder.'''
     output_dir_name = 'CMANGOES_Results'
     output_path = os.path.join('.', output_dir_name)
     output_help = '''An optional path-like argument. For parsed paths, the
@@ -510,18 +559,18 @@ def main():
     allowed_encodings = ['b', 'd']
     allowed_paddings = ['c', 's']
     allowed_images = [0, 1]
-    allowed_levels = [1, 2, 3]
+    # allowed_levels = [1, 2, 3]
 
     argument_parser.add_argument('input_file', type=pathlib.Path,
                                  help=input_help)
     argument_parser.add_argument('encoding', type=str, help=encoding_help,
-                                 choices=allowed_encodings, default='b')
-    argument_parser.add_argument('--level', type=int, help=level_help,
-                                 choices=allowed_levels)
+                                 choices=allowed_encodings)
+    argument_parser.add_argument('padding', type=str, help=padding_help,
+                                 choices=allowed_paddings)
+    # argument_parser.add_argument('--level', type=int, help=level_help,
+    #                              choices=allowed_levels)
     argument_parser.add_argument('--image', type=int, help=image_help,
                                  choices=allowed_images, default=0)
-    argument_parser.add_argument('--padding', type=str, default='c',
-                                 help=padding_help, choices=allowed_paddings)
     argument_parser.add_argument('--show_graph', type=int, help=graph_help)
     argument_parser.add_argument('--output_path', type=pathlib.Path,
                                  help=output_help)
@@ -552,7 +601,9 @@ def main():
         os.mkdir(output_path)
     except Exception as e:
         if e.errno == errno.EEXIST:
-            pass
+            # If the directory already exists we remove it and create a new one
+            shutil.rmtree(output_path)
+            os.mkdir(output_path)
         else:
             raise
 
