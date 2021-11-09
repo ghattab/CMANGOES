@@ -153,13 +153,13 @@ def encode_molecule(mol, plot_molecule=None, level=None, folder_name='graph'):
     if level is None:
         pass
     if level == 1:
-        print('\n', first_level_neighborhoods, '\n')
+        # print('\n', first_level_neighborhoods, '\n')
         return first_level_neighborhoods
     elif level == 2:
-        print('\n', second_level_neighborhoods, '\n')
+        # print('\n', second_level_neighborhoods, '\n')
         return second_level_neighborhoods
     elif level == 12:
-        print('\n', both_level_neighborhoods, '\n')
+        # print('\n', both_level_neighborhoods, '\n')
         return both_level_neighborhoods
     else:
         pass
@@ -416,7 +416,7 @@ def csv_export(normalized_encoding, classes=pd.DataFrame(),
 
 # Generate encodings and export CSVs
 # Helper function to generate all permutatations of encodings
-def generate_all_encodings(smiles, names, data_set_identifier,
+def generate_all_encodings(smiles, names, data_set_identifier, level,
                            classes=pd.DataFrame()):
 
     # Hard-coded paths for testing purposes
@@ -437,35 +437,34 @@ def generate_all_encodings(smiles, names, data_set_identifier,
             else:
                 raise
 
-    # TODO: Include different levels
     binary_centered_out_path = os.path.join(
-        images_test_path, data_set_identifier, data_set_identifier +
-        "_binary_centered_imgs")
+        images_test_path, data_set_identifier, data_set_identifier
+        + '_level_' + str(level) + "_binary_centered_imgs")
     binary_centered_csv_path = os.path.join(
-        data_test_path, data_set_identifier, data_set_identifier +
-        "_binary_centered.csv")
+        data_test_path, data_set_identifier, data_set_identifier
+        + '_level_' + str(level) + "_binary_centered.csv")
     binary_shifted_out_path = os.path.join(
-        images_test_path, data_set_identifier, data_set_identifier +
-        "_binary_shifted_imgs")
+        images_test_path, data_set_identifier, data_set_identifier
+        + '_level_' + str(level) + "_binary_shifted_imgs")
     binary_shifted_csv_path = os.path.join(
-        data_test_path, data_set_identifier, data_set_identifier +
-        "_binary_shifted.csv")
+        data_test_path, data_set_identifier, data_set_identifier
+        + '_level_' + str(level) + "_binary_shifted.csv")
     discretized_centered_out_path = os.path.join(
-        images_test_path, data_set_identifier, data_set_identifier +
-        "_discretized_centered_imgs")
+        images_test_path, data_set_identifier, data_set_identifier
+        + '_level_' + str(level) + "_discretized_centered_imgs")
     discretized_centered_csv_path = os.path.join(
-        data_test_path, data_set_identifier, data_set_identifier +
-        "_discretized_centered.csv")
+        data_test_path, data_set_identifier, data_set_identifier
+        + '_level_' + str(level) + "_discretized_centered.csv")
     discretized_shifted_out_path = os.path.join(
-        images_test_path, data_set_identifier, data_set_identifier +
-        "_discretized_shifted_imgs")
+        images_test_path, data_set_identifier, data_set_identifier
+        + '_level_' + str(level) + "_discretized_shifted_imgs")
     discretized_shifted_csv_path = os.path.join(
-        data_test_path, data_set_identifier, data_set_identifier +
-        "_discretized_shifted.csv")
+        data_test_path, data_set_identifier, data_set_identifier
+        + '_level_' + str(level) + "_discretized_shifted.csv")
 
     print("Generating binary centered encoding...")
     binary_centered = encode_molecules(
-        smiles, names, print_progress=True, generate_images=True,
+        smiles, names, print_progress=True, generate_images=True, level=level,
         output_path=binary_centered_out_path)
     csv_export(
         binary_centered, classes=classes, output_path=binary_centered_csv_path)
@@ -473,14 +472,14 @@ def generate_all_encodings(smiles, names, data_set_identifier,
     print("Generating binary shifted encoding...")
     binary_shifted = encode_molecules(
         smiles, names, print_progress=True, center_encoding=False,
-        generate_images=True, output_path=binary_shifted_out_path)
+        generate_images=True, level=level, output_path=binary_shifted_out_path)
     csv_export(
         binary_shifted, classes=classes, output_path=binary_shifted_csv_path)
 
     print("Generating discretized centered encoding...")
     discretized_centered = encode_molecules(
         smiles, names, binary_encoding=False, print_progress=True,
-        generate_images=True,
+        generate_images=True, level=level,
         output_path=discretized_centered_out_path)
     csv_export(
         discretized_centered, classes=classes,
@@ -489,7 +488,7 @@ def generate_all_encodings(smiles, names, data_set_identifier,
     print("Generating discretized shifted encoding...")
     discretized_shifted = encode_molecules(
         smiles, names, binary_encoding=False, center_encoding=False,
-        print_progress=True, generate_images=True,
+        print_progress=True, generate_images=True, level=level,
         output_path=discretized_shifted_out_path)
     csv_export(
         discretized_shifted, classes=classes,
@@ -500,7 +499,7 @@ def generate_all_encodings(smiles, names, data_set_identifier,
 
 # This function was once a part of the main function
 # It is used to create sample data sets that are mentioned in the paper
-def create_datasets():
+def create_datasets(levels):
     # Paths were hard-coded before. Below is the proper definition
     amino_acid_path = os.path.join("..", "Data", "amino_acids",
                                    "amino_acids.csv")
@@ -533,20 +532,21 @@ def create_datasets():
     hiv_protease_classes = pd.read_fwf(hiv_protease_classes_path, header=None,
                                        names=["y"])
 
-    # Amino Acids
-    generate_all_encodings(
-        smiles=amino_acids_smiles, names=amino_acids_names,
-        data_set_identifier="amino_acids")
+    for level in levels:
+        # Amino Acids
+        generate_all_encodings(
+            smiles=amino_acids_smiles, names=amino_acids_names, level=level,
+            data_set_identifier="amino_acids")
 
-    # Ace vaxinpad
-    generate_all_encodings(
-        smiles=ace_vaxinpad_smiles, names=ace_vaxinpad_names,
-        data_set_identifier="ace_vaxinpad", classes=ace_vaxinpad_classes)
+        # Ace vaxinpad
+        generate_all_encodings(
+            smiles=ace_vaxinpad_smiles, names=ace_vaxinpad_names, level=level,
+            data_set_identifier="ace_vaxinpad", classes=ace_vaxinpad_classes)
 
-    # HIV Protease
-    generate_all_encodings(
-        smiles=hiv_protease_smiles, names=hiv_protease_names,
-        data_set_identifier="hiv_protease", classes=hiv_protease_classes)
+        # HIV Protease
+        generate_all_encodings(
+            smiles=hiv_protease_smiles, names=hiv_protease_names, level=level,
+            data_set_identifier="hiv_protease", classes=hiv_protease_classes)
 
     return None
 
@@ -619,6 +619,12 @@ def main():
     argument_parser.add_argument('--show_graph', type=int, help=graph_help)
     argument_parser.add_argument('--output_path', type=pathlib.Path,
                                  help=output_help)
+
+    ############################
+    # FOR TESTING PURPOSES ! ! !
+    ############################
+    create_datasets(allowed_levels)
+    ############################
 
     # Parsing arguments
     arguments = argument_parser.parse_args()
