@@ -651,7 +651,7 @@ def main():
 
     # STEP 2: Define important variables. Also get the number of sequences in
     # a file. Do conversion to SMILES format if FASTA is provided as an input
-    print('============================================================')
+    print('\n============================================================')
     print('                          CMANGOES                          ')
     print('============================================================')
 
@@ -699,7 +699,7 @@ def main():
     csv_export(finalized_encoding, output_path=os.path.join(
         output_path, output_distinct_name + '_encoding.csv'))
 
-    print('============================================================')
+    print('============================================================\n')
 
     return None
 
