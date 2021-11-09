@@ -85,7 +85,7 @@ def plot_molecule_graph(G, labels, folder_name='graph', graph_num=None):
     return None
 
 
-def encode_molecule(mol, plot_molecule=None, folder_name='graph'):
+def encode_molecule(mol, plot_molecule=None, level=None, folder_name='graph'):
     elements = mol.nodes(data="element")
     G = create_graph_for_molecule(mol)
 
@@ -95,11 +95,12 @@ def encode_molecule(mol, plot_molecule=None, folder_name='graph'):
                             graph_num=plot_molecule)
 
     carbons = [c for c in elements if c[1].lower() == "c"]
-    neighborhoods = {}
+    neighborhoods = dict()
 
     parent_child_dict = dict.fromkeys(carbons)
 
     # Traverse all carbons and collect neighbors
+    # We are collecting all level 1 neighbors
     for carbon_node in carbons:
         neighbors_idx = list(G[carbon_node[0]].keys())
         neighbors_elements = [elements[key] for key in neighbors_idx]
@@ -107,22 +108,43 @@ def encode_molecule(mol, plot_molecule=None, folder_name='graph'):
         neighbors = list(zip(neighbors_idx, neighbors_elements))
         parent_child_dict[carbon_node] = neighbors
 
-    final_dict = dict()
-    # Traverse all carbons' neighbors and collect their neighbors
-    for carbon_node in parent_child_dict:
-        # Looking at every neighbor seperately
-        for carbon_neighbor in parent_child_dict[carbon_node]:
-            if carbon_neighbor not in carbons:
-                neighbors_idx = list(G[carbon_neighbor[0]].keys())
-                neighbors_elements = [elements[key] for key in neighbors_idx]
-
-                neighbors = list(zip(neighbors_idx, neighbors_elements))
-                final_dict[carbon_node] = parent_child_dict[carbon_node]\
-                    + neighbors
-
-    for carbon_node in final_dict:
+        # This below was added so that I get only first level
+        # Adapt this for level switch
         neighborhoods["atom_{}".format(carbon_node[0])] = pd.Series(
-            [node[1] for node in final_dict[carbon_node]])
+            neighbors_elements)
+
+    # TODO: I have to update the create_datasets() function so that
+    # it creates all variations of level outputs
+    # The third thing is to update README.md
+
+    # TODO: Raise some kind of error. This should never happen
+    if level is None:
+        pass
+
+    # If we want first-level and second-level neighbors
+    # we continue traversing outwards
+    elif level == 2:
+        final_dict = dict()
+        # Traverse all carbons' neighbors and collect their neighbors
+        for carbon_node in parent_child_dict:
+            # Looking at every neighbor seperately
+            for carbon_neighbor in parent_child_dict[carbon_node]:
+                if carbon_neighbor not in carbons:
+                    print(carbon_neighbor)
+                    neighbors_idx = list(G[carbon_neighbor[0]].keys())
+                    neighbors_elements = [elements[key]
+                                          for key in neighbors_idx]
+
+                    neighbors = list(zip(neighbors_idx, neighbors_elements))
+                    print(neighbors)
+                    final_dict[carbon_node] = parent_child_dict[carbon_node]\
+                        + neighbors
+
+        for carbon_node in final_dict:
+            neighborhoods["atom_{}".format(carbon_node[0])] = pd.Series(
+                [node[1] for node in final_dict[carbon_node]])
+
+    print('\n', pd.DataFrame.from_dict(neighborhoods), '\n')
 
     return pd.DataFrame.from_dict(neighborhoods)
 
@@ -180,7 +202,8 @@ def get_unique_atoms(mol):
 
 # Function to generate dummy encoding of smiles strings
 def dummy_encode_molecules(smiles, binary_encoding=True, print_progress=False,
-                           plot_molecule=None, folder_name='graph'):
+                           plot_molecule=None, level=None,
+                           folder_name='graph'):
     res = []
     number_of_elements = len(smiles)
 
@@ -204,10 +227,11 @@ def dummy_encode_molecules(smiles, binary_encoding=True, print_progress=False,
 
         if plot_molecule is not None and plot_molecule == i+1:
             encoding = encode_molecule(
-                mol, plot_molecule=plot_molecule, folder_name=folder_name)
+                mol, plot_molecule=plot_molecule, level=level,
+                folder_name=folder_name)
         else:
             encoding = encode_molecule(
-                mol, plot_molecule=None, folder_name=folder_name)
+                mol, plot_molecule=None, level=level, folder_name=folder_name)
 
         dummy_encoding = pd.get_dummies(encoding)
 
@@ -337,12 +361,12 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
 def encode_molecules(
         smiles, names, binary_encoding=True, center_encoding=True,
         plot_molecule=None, print_progress=False, generate_images=False,
-        output_path="encoding_images"):
+        level=None, output_path="encoding_images"):
 
     dummies = dummy_encode_molecules(
         smiles=smiles, binary_encoding=binary_encoding,
         print_progress=print_progress, plot_molecule=plot_molecule,
-        folder_name=output_path)
+        level=level, folder_name=output_path)
     normalized_encoding = normalize_encodings(
         dummy_encodings=dummies, names=names, center_encoding=center_encoding)
     if generate_images:
@@ -516,14 +540,16 @@ def main():
     program_description = '''cmangoes: Carbon-based Multi-level Atomic
                              Neighborhood Encodings'''
 
-    input_help = 'A required path-like argument.'
+    input_help = 'A required path-like argument'
     encoding_help = '''A required character argument that specifies an
                        encoding to be used. b is for binary, d is for
-                       discretized.'''
+                       discretized'''
     padding_help = '''A required character argument that specifies a
                        padding to be used. c is for centered, s is for
-                       shifted.'''
-    # level_help = 'An optional integer argument.'
+                       shifted'''
+    level_help = '''An optional integer argument that specifies the upper
+                    boundary of levels that should be considered. Default: 2
+                    (levels 1 and 2)'''
     image_help = '''An optional integer argument that specifies whether
                      images should be created or not. Default: 0 (without
                      images)'''
@@ -534,7 +560,7 @@ def main():
                     input file. Example: if number 5 is parsed for this option,
                     a graph representation of the 5th sequence of the input
                     file shall be created and placed in the corresponding
-                    images folder.'''
+                    images folder'''
     output_dir_name = 'CMANGOES_Results'
     output_path = os.path.join('.', output_dir_name)
     output_help = '''An optional path-like argument. For parsed paths, the
@@ -559,7 +585,7 @@ def main():
     allowed_encodings = ['b', 'd']
     allowed_paddings = ['c', 's']
     allowed_images = [0, 1]
-    # allowed_levels = [1, 2, 3]
+    allowed_levels = [1, 2]
 
     argument_parser.add_argument('input_file', type=pathlib.Path,
                                  help=input_help)
@@ -567,8 +593,8 @@ def main():
                                  choices=allowed_encodings)
     argument_parser.add_argument('padding', type=str, help=padding_help,
                                  choices=allowed_paddings)
-    # argument_parser.add_argument('--level', type=int, help=level_help,
-    #                              choices=allowed_levels)
+    argument_parser.add_argument('--level', type=int, help=level_help,
+                                 choices=allowed_levels, default=2)
     argument_parser.add_argument('--image', type=int, help=image_help,
                                  choices=allowed_images, default=0)
     argument_parser.add_argument('--show_graph', type=int, help=graph_help)
@@ -601,9 +627,12 @@ def main():
         os.mkdir(output_path)
     except Exception as e:
         if e.errno == errno.EEXIST:
+            # If the directory already exists we won't create it
+            pass
+
             # If the directory already exists we remove it and create a new one
-            shutil.rmtree(output_path)
-            os.mkdir(output_path)
+            # shutil.rmtree(output_path)
+            # os.mkdir(output_path)
         else:
             raise
 
@@ -622,7 +651,6 @@ def main():
 
     # STEP 2: Define important variables. Also get the number of sequences in
     # a file. Do conversion to SMILES format if FASTA is provided as an input
-    # TODO: Implement level variable
     print('============================================================')
     print('                          CMANGOES                          ')
     print('============================================================')
@@ -634,6 +662,8 @@ def main():
         else 'discretized_'
     output_distinct_name += 'centered_' if arguments.padding == 'c'\
         else 'shifted_'
+    output_distinct_name += 'level_1_' if arguments.level == 1\
+        else 'levels_1_and_2_'
     output_distinct_name += 'with_images' if arguments.image == 1\
         else 'without_images'
 
@@ -662,6 +692,7 @@ def main():
         smiles_list, names, binary_encoding=binary_encoding,
         center_encoding=center_encoding, plot_molecule=arguments.show_graph,
         print_progress=False, generate_images=generate_images,
+        level=arguments.level,
         output_path=os.path.join(
             output_path, output_distinct_name + '_Images'))
 
