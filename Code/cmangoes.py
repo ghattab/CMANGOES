@@ -1,6 +1,5 @@
 import os
 import errno
-import shutil
 import pathlib
 import argparse
 import math
@@ -113,40 +112,57 @@ def encode_molecule(mol, plot_molecule=None, level=None, folder_name='graph'):
         neighborhoods["atom_{}".format(carbon_node[0])] = pd.Series(
             neighbors_elements)
 
+    first_level_neighborhoods = pd.DataFrame.from_dict(neighborhoods.copy())
+
     # TODO: I have to update the create_datasets() function so that
     # it creates all variations of level outputs
     # The third thing is to update README.md
 
+    # If we want first-level and second-level neighbors
+    # we continue traversing outwards
+    final_dict = dict()
+    # Traverse all carbons' neighbors and collect their neighbors
+    for carbon_node in parent_child_dict:
+        # Looking at every neighbor seperately
+        for carbon_neighbor in parent_child_dict[carbon_node]:
+            if carbon_neighbor not in carbons:
+                neighbors_idx = list(G[carbon_neighbor[0]].keys())
+                neighbors_elements = [elements[key]
+                                      for key in neighbors_idx]
+
+                neighbors = list(zip(neighbors_idx, neighbors_elements))
+                final_dict[carbon_node] = parent_child_dict[carbon_node]\
+                    + neighbors
+
+    for carbon_node in final_dict:
+        neighborhoods["atom_{}".format(carbon_node[0])] = pd.Series(
+            [node[1] for node in final_dict[carbon_node]])
+
+    both_level_neighborhoods = pd.DataFrame.from_dict(neighborhoods.copy())
+
+    second_level_neighborhoods = pd.concat(
+        [both_level_neighborhoods, first_level_neighborhoods,
+         first_level_neighborhoods]).drop_duplicates(
+             keep=False).reset_index(drop=True)
+    # Adding carbons as the first row
+    second_level_neighborhoods.loc[-1] = ['C' for i in range(len(carbons))]
+    second_level_neighborhoods.index = second_level_neighborhoods.index + 1
+    second_level_neighborhoods = second_level_neighborhoods.sort_index()
+
     # TODO: Raise some kind of error. This should never happen
     if level is None:
         pass
-
-    # If we want first-level and second-level neighbors
-    # we continue traversing outwards
+    if level == 1:
+        print('\n', first_level_neighborhoods, '\n')
+        return first_level_neighborhoods
     elif level == 2:
-        final_dict = dict()
-        # Traverse all carbons' neighbors and collect their neighbors
-        for carbon_node in parent_child_dict:
-            # Looking at every neighbor seperately
-            for carbon_neighbor in parent_child_dict[carbon_node]:
-                if carbon_neighbor not in carbons:
-                    print(carbon_neighbor)
-                    neighbors_idx = list(G[carbon_neighbor[0]].keys())
-                    neighbors_elements = [elements[key]
-                                          for key in neighbors_idx]
-
-                    neighbors = list(zip(neighbors_idx, neighbors_elements))
-                    print(neighbors)
-                    final_dict[carbon_node] = parent_child_dict[carbon_node]\
-                        + neighbors
-
-        for carbon_node in final_dict:
-            neighborhoods["atom_{}".format(carbon_node[0])] = pd.Series(
-                [node[1] for node in final_dict[carbon_node]])
-
-    print('\n', pd.DataFrame.from_dict(neighborhoods), '\n')
-
-    return pd.DataFrame.from_dict(neighborhoods)
+        print('\n', second_level_neighborhoods, '\n')
+        return second_level_neighborhoods
+    elif level == 12:
+        print('\n', both_level_neighborhoods, '\n')
+        return both_level_neighborhoods
+    else:
+        pass
 
 
 def next_perfect_square(N):
@@ -421,6 +437,7 @@ def generate_all_encodings(smiles, names, data_set_identifier,
             else:
                 raise
 
+    # TODO: Include different levels
     binary_centered_out_path = os.path.join(
         images_test_path, data_set_identifier, data_set_identifier +
         "_binary_centered_imgs")
@@ -548,8 +565,10 @@ def main():
                        padding to be used. c is for centered, s is for
                        shifted'''
     level_help = '''An optional integer argument that specifies the upper
-                    boundary of levels that should be considered. Default: 2
-                    (levels 1 and 2)'''
+                    boundary of levels that should be considered. Default: 12
+                    (levels 1 and 2). Example: level 1 returns only first-level
+                    neighbors, and level 2 return only second-level neighbors.
+                    Level 12 returns level 1 and level 2 neighbors'''
     image_help = '''An optional integer argument that specifies whether
                      images should be created or not. Default: 0 (without
                      images)'''
@@ -585,7 +604,7 @@ def main():
     allowed_encodings = ['b', 'd']
     allowed_paddings = ['c', 's']
     allowed_images = [0, 1]
-    allowed_levels = [1, 2]
+    allowed_levels = [1, 2, 12]
 
     argument_parser.add_argument('input_file', type=pathlib.Path,
                                  help=input_help)
@@ -594,7 +613,7 @@ def main():
     argument_parser.add_argument('padding', type=str, help=padding_help,
                                  choices=allowed_paddings)
     argument_parser.add_argument('--level', type=int, help=level_help,
-                                 choices=allowed_levels, default=2)
+                                 choices=allowed_levels, default=12)
     argument_parser.add_argument('--image', type=int, help=image_help,
                                  choices=allowed_images, default=0)
     argument_parser.add_argument('--show_graph', type=int, help=graph_help)
@@ -662,8 +681,14 @@ def main():
         else 'discretized_'
     output_distinct_name += 'centered_' if arguments.padding == 'c'\
         else 'shifted_'
-    output_distinct_name += 'level_1_' if arguments.level == 1\
-        else 'levels_1_and_2_'
+
+    if arguments.level == 1:
+        output_distinct_name += 'level_1_'
+    elif arguments.level == 2:
+        output_distinct_name += 'level_2_'
+    else:
+        output_distinct_name += 'levels_1_and_2_'
+
     output_distinct_name += 'with_images' if arguments.image == 1\
         else 'without_images'
 
