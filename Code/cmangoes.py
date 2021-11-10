@@ -114,10 +114,6 @@ def encode_molecule(mol, plot_molecule=None, level=None, folder_name='graph'):
 
     first_level_neighborhoods = pd.DataFrame.from_dict(neighborhoods.copy())
 
-    # TODO: I have to update the create_datasets() function so that
-    # it creates all variations of level outputs
-    # The third thing is to update README.md
-
     # If we want first-level and second-level neighbors
     # we continue traversing outwards
     final_dict = dict()
@@ -140,26 +136,24 @@ def encode_molecule(mol, plot_molecule=None, level=None, folder_name='graph'):
 
     both_level_neighborhoods = pd.DataFrame.from_dict(neighborhoods.copy())
 
-    second_level_neighborhoods = pd.concat(
-        [both_level_neighborhoods, first_level_neighborhoods,
-         first_level_neighborhoods]).drop_duplicates(
-             keep=False).reset_index(drop=True)
-    # Adding carbons as the first row
-    second_level_neighborhoods.loc[-1] = ['C' for i in range(len(carbons))]
-    second_level_neighborhoods.index = second_level_neighborhoods.index + 1
-    second_level_neighborhoods = second_level_neighborhoods.sort_index()
+    # Uncomment this to have the second level only
+    # second_level_neighborhoods = pd.concat(
+    #    [both_level_neighborhoods, first_level_neighborhoods,
+    #     first_level_neighborhoods]).drop_duplicates(
+    #         keep=False).reset_index(drop=True)
+    # Adding carbons as the first row (if that is desired)
+    # second_level_neighborhoods.loc[-1] = ['C' for i in range(len(carbons))]
+    # second_level_neighborhoods.index = second_level_neighborhoods.index + 1
+    # second_level_neighborhoods = second_level_neighborhoods.sort_index()
 
     # TODO: Raise some kind of error. This should never happen
     if level is None:
         pass
     if level == 1:
-        # print('\n', first_level_neighborhoods, '\n')
         return first_level_neighborhoods
-    elif level == 2:
-        # print('\n', second_level_neighborhoods, '\n')
-        return second_level_neighborhoods
+    # elif level == 2:
+    #    return second_level_neighborhoods
     elif level == 12:
-        # print('\n', both_level_neighborhoods, '\n')
         return both_level_neighborhoods
     else:
         pass
@@ -551,7 +545,6 @@ def create_datasets(levels):
     return None
 
 
-# TODO: Implement level argument
 def main():
     program_name = 'cmangoes'
     program_description = '''cmangoes: Carbon-based Multi-level Atomic
@@ -566,9 +559,8 @@ def main():
                        shifted'''
     level_help = '''An optional integer argument that specifies the upper
                     boundary of levels that should be considered. Default: 12
-                    (levels 1 and 2). Example: level 1 returns only first-level
-                    neighbors, and level 2 return only second-level neighbors.
-                    Level 12 returns level 1 and level 2 neighbors'''
+                    (levels 1 and 2). Option 1 returns only first-level
+                    neighbors'''
     image_help = '''An optional integer argument that specifies whether
                      images should be created or not. Default: 0 (without
                      images)'''
@@ -604,7 +596,8 @@ def main():
     allowed_encodings = ['b', 'd']
     allowed_paddings = ['c', 's']
     allowed_images = [0, 1]
-    allowed_levels = [1, 2, 12]
+    # allowed_levels = [1, 2, 12]
+    allowed_levels = [1, 12]
 
     argument_parser.add_argument('input_file', type=pathlib.Path,
                                  help=input_help)
@@ -690,8 +683,8 @@ def main():
 
     if arguments.level == 1:
         output_distinct_name += 'level_1_'
-    elif arguments.level == 2:
-        output_distinct_name += 'level_2_'
+    # elif arguments.level == 2:
+    #    output_distinct_name += 'level_2_'
     else:
         output_distinct_name += 'levels_1_and_2_'
 

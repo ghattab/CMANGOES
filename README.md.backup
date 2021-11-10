@@ -41,54 +41,66 @@ The code is written in Python 3.8.12 and tested on Linux with the following libr
 
 
 ## Data
-The data used in the **Example 1** comes from the following paper:
+The example data comes from the following papers:
 
-> **Integration of time-series meta-omics data reveals how microbial ecosystems respond to disturbance**, Herold, M., Martínez Arbas, S., Narayanasamy, S. et al. Nat Commun 11, 5281(2020).
-https://doi.org/10.1038/s41467-020-19006-2.
+> **Computer-aided prediction of antigen presenting cell modulators for designing peptide-based vaccine adjuvants**, Nagpal, G., Chaudhary, K., Agrawal, P. et al., J Transl Med (2018), 16 (181).
+https://doi.org/10.1186/s12967-018-1560-1.
 
-It is stored at [Data/cached/example_1/](./Data/cached/example_1) in either a raw format or as a [pickle](https://docs.python.org/3/library/pickle.html) object.
+Dataset was downloaded from https://webs.iiitd.edu.in/raghava/vaxinpad/sequences.phphttps://webs.iiitd.edu.in/raghava/vaxinpad/sequences.php. It is stored at [Data/ace_vaxinpad/](./Data/ace_vaxinpad/).
 
-The data used in the **Example 2** comes from the following paper:
+> **State of the art prediction of HIV-1 protease cleavage sites**, Rögnvaldsson T., You L., Garwicz D., Bioinformatics (2015) 31 (8): 1204-1210. https://doi.org/10.1093/bioinformatics/btu810.
 
-> **Short- and Long-Term Transcriptomic Responses of Escherichia coli to Biocides: a Systems Analysis**, Merchel Piovesan Pereira, B., Wang, X., & Tagkopoulos, I. (2020). Applied and environmental microbiology, 86(14), e00708-20.
-https://doi.org/10.1128/AEM.00708-20.
+Dataset was downloaded from https://archive.ics.uci.edu/ml/datasets/HIV-1+protease+cleavage. It is stored at [Data/hiv_protease/](./Data/hiv_protease/). 
 
-It is stored at [Data/cached/example_2/](./Data/cached/example_2) in a raw format.
+
 
 
 ## Code
 |Script|Description|
 |---|---|
 |[Code/](./Code/)|contains all scripts necessary to run the tool.
-|[Code/main.py](./Code/main.py)|contains the code that implements the whole pipeline.
+|[Code/cmangoes.py](./Code/cmangoes.py)|contains the code that implements the whole pipeline.
 |[Code/Dimensionality_Reduction.Rmd](./Code/Dimensionality_Reduction.Rmd)|contains the code used for ML tasks in the paper, specifically the dimensionality reduction step of ML pipeline.
 |[Code/Machine_Learning.Rmd](./Code/Machine_Learning.Rmd)|contains the code used for ML tasks in the paper.
 |[Code/Preprocessing.Rmd](./Code/Preprocessing.Rmd)|contains the code used for ML tasks in the paper, specifically the preprocessing step of ML pipeline.
 
 ## Getting started
+```
+usage: cmangoes [-h] [--level {1,2,12}] [--image {0,1}] [--show_graph SHOW_GRAPH]
+                [--output_path OUTPUT_PATH]
+                input_file {b,d} {c,s}
 
+cmangoes: Carbon-based Multi-level Atomic Neighborhood Encodings
+
+positional arguments:
+  input_file            A required path-like argument
+  {b,d}                 A required character argument that specifies an encoding to be used. b is for
+                        binary, d is for discretized
+  {c,s}                 A required character argument that specifies a padding to be used. c is for
+                        centered, s is for shifted
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --level {1,2,12}      An optional integer argument that specifies the upper boundary of levels that
+                        should be considered. Default: 12 (levels 1 and 2). Example: level 1 returns
+                        only first-level neighbors, and level 2 return only second-level neighbors.
+                        Level 12 returns level 1 and level 2 neighbors
+  --image {0,1}         An optional integer argument that specifies whether images should be created or
+                        not. Default: 0 (without images)
+  --show_graph SHOW_GRAPH
+                        An optional integer argument that specifies whether a graph representation
+                        should be created or not. Default: 0 (without representation). The user should
+                        provide the number between 1 and the number of sequences in the parsed input
+                        file. Example: if number 5 is parsed for this option, a graph representation of
+                        the 5th sequence of the input file shall be created and placed in the
+                        corresponding images folder
+  --output_path OUTPUT_PATH
+                        An optional path-like argument. For parsed paths, the directory must exist
+                        beforehand. Default: ./CMANGOES_Results
+```
 
 ## Installation & Running
-### Stable
-The easiest way to install the tool is to use our latest Docker image:
-
-```
-docker pull aanzel/movis:latest
-docker run --publish 8501:8501 --detach --name movis aanzel/movis:latest
-```
-
-
-### Unstable
-*Caution! Use at your own risk!*
-
-You could also clone this repository, build a docker container yourself, and run it locally. This is not recommended as we might introduce unstable features that might not end in the next release of MOVIS. Below is a sequence of instructions (for Linux-based systems) to run the **unstable** version of MOVIS:
-
-```
-git clone https://github.com/AAnzel/MOVIS.git
-cd MOVIS
-docker build -t movis-local:unstable .
-docker run --publish 8501:8501 --detach --name movis movis-local:unstable
-```
+Place yourself in the [Code](./Code) directory, then run the following command `python cmangoes.py --help` to see how to run the tool. The output of this option is presented in the previous subsection [Getting started](## Getting started).
 
 ## License
 
