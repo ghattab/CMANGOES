@@ -100,7 +100,7 @@ optional arguments:
 ```
 
 ## Installation & Running
-Place yourself in the [Code](./Code) directory, then run the following command `python cmangoes.py --help` to see how to run the tool. The output of this option is presented in the previous subsection [Getting started](Getting started).
+Place yourself in the [Code](./Code) directory, then run the following command `python cmangoes.py --help` to see how to run the tool. The output of this option is presented in the previous subsection [Getting started](## Getting started).
 
 ## License
 
