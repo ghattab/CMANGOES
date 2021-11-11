@@ -26,7 +26,6 @@ def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
         for i, fasta_string in enumerate(SeqIO.parse(input_file, 'fasta')):
             obConversion.ReadString(mol, str(fasta_string.seq))
             output_smiles_string = obConversion.WriteString(mol)
-            # print(i+1, '-', output_smiles_string)
             for char in ['[', ']', '.']:
                 output_smiles_string = output_smiles_string.replace(char, '')
 
@@ -330,10 +329,6 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
 
         dim = int(math.sqrt(len(encoding)))
 
-        # Path seperator was originally presented as '\'
-        # FIX: os.path.join is used instead, for uniformity
-        # dirname = os.path.realpath(".") + ("\{}".format(folder_name))
-
         dirname = os.path.join(os.path.realpath("."), folder_name)
         if not os.path.exists(dirname):
             try:
@@ -361,7 +356,6 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
         plt.savefig(filename)
         plt.close()
 
-    # print("Saved images to folder ./{}".format(folder_name))
     print('Saved images to folder ' + folder_name, '\n')
 
     return None

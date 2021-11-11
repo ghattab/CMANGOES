@@ -102,6 +102,8 @@ optional arguments:
 ## Installation & Running
 Place yourself in the [Code](./Code) directory, then run the following command `python cmangoes.py --help` to see how to run the tool. The output of this option is presented in the previous subsection.
 
+You can also use the standalone CMANGOES executable on GNU Linux systems. To do that, place yourself in the [Executable](./Executable) directory and then run the tool with the following command `./cmangoes input_file {b, d} {c, s}` or just use `./cmangoes --help` to see how to run the tool.
+
 ## License
 
 Licensed under the MIT License ([LICENSE](./LICENSE)).
