@@ -616,7 +616,7 @@ def main():
     ############################
     # FOR TESTING PURPOSES ! ! !
     ############################
-    create_datasets(allowed_levels)
+    # create_datasets(allowed_levels)
     ############################
 
     # Parsing arguments
