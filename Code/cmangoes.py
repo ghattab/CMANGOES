@@ -42,6 +42,10 @@ def get_smiles_list(smiles_path):
     with open(smiles_path, 'r') as input_file:
         smiles_list = input_file.readlines()
 
+    for i in range(len(smiles_list)):
+        for char in ['[', ']', '.']:
+            smiles_list[i] = smiles_list[i].replace(char, '')
+
     return smiles_list
 
 
