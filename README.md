@@ -7,7 +7,7 @@
 
 This package is created for the following paper:
 
-***"CMANGOES: CMANGOES: Carbon-based Multi-level AtomicNeiGhborhOod EncodingS"*** by Georges Hattab, Nils Neumann, Aleksandar Anžel, Dominik Heider
+***"A parametric approach to molecular encodings of carbon-based multilevel atomic neighborhoods"*** by Georges Hattab, Nils Neumann, Aleksandar Anžel, Dominik Heider
 
 **Paper badge placeholder, link to the PDF placeholder**
 
@@ -18,8 +18,16 @@ Please cite the paper as:
 ---
 Abstract:
 
-> Exploring new ways to discover organic molecules is critical for developing therapies. With recent advances in bioinformatics, virtual screening of databases is possible. However, biochemical data must be encoded using computer algorithms to make them machine-readable, taking into account distance and similarity measures to support tasks such as similarity search. Motivated by the ubiquity of the carbon element and the structured patterns that emerge in biochemical molecules, we propose a parametric fingerprinting algorithm that integrates neighborhood information at multiple levels. Here we present CMANGOES, carbon-based multi-level atomic neighborhood encodings, a package that integrates and implements a parametric fingerprint. It implements a walk along the carbon chain of an organic molecule to compute different representations of the feature encoding of a molecule. The resulting encodings are task-specific, reproducible, and readily formatted for various domain tasks including machine learning tasks. Encodings created using this package were evaluated using a 10-fold stratified cross validation for binary classification with 8 peptide data sets and 6 different encodings. CMANGOES is built on open-source software and is implemented as a Python package (cmangoes).
-The source code is available at [https://github.com/ghattab/CMANGOES](https://github.com/ghattab/cmangoes).
+> Exploring new ways to represent and discover organic molecules is critical for developing therapies.
+With recent advances in bioinformatics, virtual screening of databases is possible.
+However, biochemical data must be encoded using computer algorithms to make them machine-readable, taking into account distance and similarity measures to support tasks such as similarity searching.
+Motivated by the ubiquity of the carbon element and the structured patterns that emerge, we propose a parametric approach to molecular encodings of carbon-based multilevel atomic neighborhoods. 
+It implements a walk along the carbon chain of an organic molecule to compute different representations of its feature encoding in the form of a binary or numerical array that can be exported later into an image.
+Resulting encodings are reproducible and readily formatted for various domain tasks including machine learning tasks. 
+This approach was evaluated using a 10-fold stratified cross validation for binary classification with eight data sets and six different encodings (384 models) in the domain knowledge of cell-penetrating peptides. 
+The parametric approach is built on open-source software and 
+is implemented as a Python package (cmangoes).
+Source code and documentation are available at [https://github.com/ghattab/CMANGOES](https://github.com/ghattab/cmangoes).
 
 **Paper image placeholder**
 
