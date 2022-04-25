@@ -1,0 +1,36 @@
+[
+  {
+    "name": "",
+    "id": "1"
+  },
+  {
+    "name": "",
+    "id": "2",
+    "parent": "1"
+  },
+  {
+    "name": "seqbin",
+    "id": "3",
+    "parent": "2"
+  },
+  {
+    "name": "strbin",
+    "id": "4",
+    "parent": "2"
+  },
+  {
+    "name": "",
+    "id": "5",
+    "parent": "1"
+  },
+  {
+    "name": "seqdis",
+    "id": "6",
+    "parent": "5"
+  },
+  {
+    "name": "strdis",
+    "id": "7",
+    "parent": "5"
+  }
+]
