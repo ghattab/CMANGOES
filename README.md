@@ -49,17 +49,9 @@ The code is written in Python 3.8.12 and tested on Linux with the following libr
 
 
 ## Data
-The example data comes from the following papers:
+The example data we used to evaluate CMANGOES comes from the [peptidereactor](https://doi.org/10.1093/nargab/lqab039) [repository](https://github.com/spaenigs/peptidereactor/tree/master/data). We selected 30 data sets from that repository and placed them at [Data/Original_datasets/](Data/Original_datasets/). Each data set has a separate README file that contains the additional information of that data set.
 
-> **Computer-aided prediction of antigen presenting cell modulators for designing peptide-based vaccine adjuvants**, Nagpal, G., Chaudhary, K., Agrawal, P. et al., J Transl Med (2018), 16 (181).
-https://doi.org/10.1186/s12967-018-1560-1.
-
-Dataset was downloaded from https://webs.iiitd.edu.in/raghava/vaxinpad/sequences.phphttps://webs.iiitd.edu.in/raghava/vaxinpad/sequences.php. It is stored at [Data/ace_vaxinpad/](./Data/ace_vaxinpad/).
-
-> **State of the art prediction of HIV-1 protease cleavage sites**, Rögnvaldsson T., You L., Garwicz D., Bioinformatics (2015) 31 (8): 1204-1210. https://doi.org/10.1093/bioinformatics/btu810.
-
-Dataset was downloaded from https://archive.ics.uci.edu/ml/datasets/HIV-1+protease+cleavage. It is stored at [Data/hiv_protease/](./Data/hiv_protease/). 
-
+After encoding those data sets with CMANGOES, we used the [peptidereactor](https://doi.org/10.1093/nargab/lqab039) to evaluate our method against all other encoding methods available in the peptidereactor. Evaluation results of CMANGOES are placed at [Data/Visualization_data/data/](Data/Visualization_data/data/). Evaluation results of other encoding methods provided by the peptidereactor are located at [Data/Visualization_data/peptidereactor_vis_data/](Data/Visualization_data/peptidereactor_vis_data/). We combined both evaluation results to create visualizations present in our manuscript.
 
 
 
@@ -68,6 +60,8 @@ Dataset was downloaded from https://archive.ics.uci.edu/ml/datasets/HIV-1+protea
 |---|---|
 |[Code/](./Code/)|contains all scripts necessary to run the tool.
 |[Code/cmangoes.py](./Code/cmangoes.py)|contains the code that implements the whole pipeline.
+|[Code/batch_encoding.py](./Code/batch_encoding.py)|contains the code that uses CMANGOES to batch-encode selected data sets from the [peptidereactor](https://doi.org/10.1093/nargab/lqab039) [repository](https://github.com/spaenigs/peptidereactor/tree/master/data).
+|[Code/visualize.ipynb](./Code/visualize.ipynb)|contains the code that creates visualizations of the final results.
 |[Code/Dimensionality_Reduction.Rmd](./Code/Dimensionality_Reduction.Rmd)|contains the code used for ML tasks in the paper, specifically the dimensionality reduction step of ML pipeline.
 |[Code/Machine_Learning.Rmd](./Code/Machine_Learning.Rmd)|contains the code used for ML tasks in the paper.
 |[Code/Preprocessing.Rmd](./Code/Preprocessing.Rmd)|contains the code used for ML tasks in the paper, specifically the preprocessing step of ML pipeline.
