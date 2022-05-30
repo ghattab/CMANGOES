@@ -4,8 +4,10 @@ import pandas as pd
 import multiprocessing as mp
 import cmangoes
 import tqdm
+from timeit import default_timer as timer
 
-path_datasets = os.path.join('..', '..', 'peptidereactor', 'data')
+
+path_datasets = os.path.join('..', 'Data', 'Original_datasets')
 list_of_datasets = [
     'ace_vaxinpad',
     'acp_anticp',
@@ -159,14 +161,16 @@ def run_parallel():
     return None
 
 
-'''
-def run_sequential():
+def run_sequential(bool_flag_time):
     # Traversing all datasets and encoding them using CMANGOES
     num_of_datasets = len(list_of_datasets)
     dataset_counter = 1
     print('==================================================================')
     print('Encoding ' + str(num_of_datasets) + ' datasets using CMANGOES')
     print('==================================================================')
+
+    if bool_flag_time:
+        list_time_results = []
 
     for one_dataset in list_of_datasets:
         print('Progress ' + str(dataset_counter) + '/' + str(num_of_datasets),
@@ -210,10 +214,17 @@ def run_sequential():
                     path_one_dataset_output_dir,
                     output_distinct_name + 'encoding.csv')
 
+                if bool_flag_time:
+                    timer_start = timer()
+
                 finalized_encoding = cmangoes.encode_molecules(
                     smiles_list, names, binary_encoding=binary_encoding,
                     center_encoding=center_encoding, level=level,
                     output_path=path_one_dataset_output_dir)
+
+                if bool_flag_time:
+                    timer_end = timer()
+                    list_time_results.append(timer_end - timer_start)
 
                 cmangoes.csv_export(
                     finalized_encoding,
@@ -267,12 +278,47 @@ def run_sequential():
         dataset_counter += 1
         print('==============================================================')
 
+    return list_time_results
+
+
+def test_performance(int_number_of_runs):
+    bool_flag_time = True
+    path_experiment_data = os.path.join('..', 'Data',
+                                        'Performance_experiments')
+
+    list_encoding_names = []
+    binary_encoding_values = [True, False]
+    center_encoding_values = [True, False]
+
+    for string_one_dataset in list_of_datasets:
+        for binary_encoding in binary_encoding_values:
+            for center_encoding in center_encoding_values:
+                output_distinct_name = '_binary_' if binary_encoding\
+                    else '_discretized_'
+                output_distinct_name += 'centered_' if center_encoding\
+                    else 'shifted_'
+                output_distinct_name += 'levels_1_and_2_'
+
+                list_encoding_names.append(
+                    string_one_dataset + output_distinct_name)
+
+    df_results = pd.DataFrame()
+    df_results['Encodings'] = list_encoding_names
+
+    for i in int_number_of_runs:
+        list_results_of_run = run_sequential(bool_flag_time)
+        df_results['Run_' + str(i)] = list_results_of_run
+        df_results.to_csv(os.path.join(path_experiment_data, 'results.csv'),
+                          index=False)
+
     return None
-'''
 
 
 def main():
-    run_parallel()
+    # run_parallel()
+
+    int_number_of_runs = 3
+    test_performance(int_number_of_runs)
 
     return None
 
