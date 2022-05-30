@@ -305,7 +305,7 @@ def test_performance(int_number_of_runs):
     df_results = pd.DataFrame()
     df_results['Encodings'] = list_encoding_names
 
-    for i in int_number_of_runs:
+    for i in range(int_number_of_runs):
         list_results_of_run = run_sequential(bool_flag_time)
         df_results['Run_' + str(i)] = list_results_of_run
         df_results.to_csv(os.path.join(path_experiment_data, 'results.csv'),
