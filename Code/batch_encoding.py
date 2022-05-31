@@ -303,6 +303,12 @@ def test_performance(int_number_of_runs):
                     string_one_dataset + output_distinct_name)
 
     df_results = pd.DataFrame()
+
+    list_tmp_dataset_names = []
+    for string_one_dataset in list_of_datasets:
+        list_tmp_dataset_names += 4 * [string_one_dataset]
+
+    df_results['Dataset'] = list_tmp_dataset_names
     df_results['Encodings'] = list_encoding_names
 
     for i in range(int_number_of_runs):
