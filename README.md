@@ -7,12 +7,13 @@
 
 This package is created for the following paper:
 
-***"A parametric approach to molecular encodings of carbon-based multilevel atomic neighborhoods"*** by Georges Hattab, Nils Neumann, Aleksandar Anžel, Dominik Heider
+***"A parametric approach for molecular encodings using multilevel atomic neighborhoods applied to peptide classification"*** by Georges Hattab, Aleksandar Anžel, Sebastian Spänig, Nils Neumann, Dominik Heider
 
 **Paper badge placeholder, link to the PDF placeholder**
 
 Please cite the paper as:
-``` Bibtex citation placeholder
+```
+Bibtex citation placeholder
 ```
 
 ---
