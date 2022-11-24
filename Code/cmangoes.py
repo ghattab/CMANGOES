@@ -15,6 +15,20 @@ from Bio import SeqIO
 
 
 def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
+    """
+    convert_fasta_to_smiles converts a FASTA file located at
+    input_fasta_file_path and outputs a smiles file at the location
+    output_smiles_file_path
+
+    Args:
+        input_fasta_file_path (os.path): The path to the input FASTA file.
+        output_smiles_file_path (os.path): The path to the output smiles file.
+
+    Returns:
+        list: This list contains smiles strings as elements. These strings are
+        the result of the conversion of sequences in the FASTA file.
+    """
+
     obConversion = openbabel.OBConversion()
     obConversion.SetInAndOutFormats('fasta', 'smi')
 
@@ -38,6 +52,18 @@ def convert_fasta_to_smiles(input_fasta_file_path, output_smiles_file_path):
 
 
 def get_smiles_list(smiles_path):
+    """
+    get_smiles_list creates and returns list of smiles strings. This function
+    is used when the input file has smiles extension and not FASTA extension.
+
+    Args:
+        smiles_path (os.path): The path to the input smiles file that contains
+        one or more sequences in smiles format.
+
+    Returns:
+        list: This list contains smiles strings as elements.
+    """
+
     smiles_list = []
     with open(smiles_path, 'r') as input_file:
         smiles_list = input_file.readlines()
