@@ -252,6 +252,19 @@ def next_perfect_square(N):
 
 
 def center_matrix(m, target_dim):
+    """
+    center_matrix adds zeroes (padding) to the matrix so that the values are
+    centered in the resulting matrix.
+
+    Args:
+        m (numpy.array): The original matrix that has to be padded.
+        target_dim (int): The target dimension of the resulting matrix.
+
+    Returns:
+        numpy.array: The resulting matrix where original matrix values are
+        padded with zeroes.
+    """
+
     cur_dim = list(m.shape)
     steps = target_dim - cur_dim[0]
     for i in range(steps):
@@ -274,6 +287,19 @@ def center_matrix(m, target_dim):
 
 
 def shift_matrix(m, target_dim):
+    """
+    shift_matrix adds zeroes (padding) to the matrix so that the values are
+    shifted to the right in the resulting matrix.
+
+    Args:
+        m (numpy.array): The original matrix that has to be padded.
+        target_dim (int): The target dimension of the resulting matrix.
+
+    Returns:
+        numpy.array: The resulting matrix where original matrix values are
+        shifted to the right and padded with zeroes on the left hand side.
+    """
+
     cur_dim = list(m.shape)
     steps = target_dim - cur_dim[0]
     for i in range(steps):
@@ -288,6 +314,20 @@ def shift_matrix(m, target_dim):
 
 
 def get_unique_atoms(mol):
+    """
+    get_unique_atoms finds unique atoms in a molecule.
+
+    Args:
+        mol (networkx.Graph): A graph describing a molecule. Nodes will have an
+        'element', 'aromatic' and a 'charge', and if `explicit_hydrogen` is
+        False a 'hcount'. Depending on the input, they will also have 'isotope'
+        and 'class' information. Edges will have an 'order'.
+
+    Returns:
+        set: This set contains tuples of size 2, where each tuple represents
+        one unique atom (node) from the molecule (graph).
+    """
+
     atoms = mol.nodes(data="element")
     unique_atoms = set()
     for atom_tuple in atoms:
