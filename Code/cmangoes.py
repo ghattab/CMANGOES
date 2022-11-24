@@ -76,12 +76,40 @@ def get_smiles_list(smiles_path):
 
 
 def create_graph_for_molecule(mol):
+    """
+    create_graph_for_molecule creates a graph using networkx library out of the
+    parsed graphed that describes the molecule.
+
+    Args:
+        mol (networkx.Graph): A graph describing a molecule. Nodes will have an
+        'element', 'aromatic' and a 'charge', and if `explicit_hydrogen` is
+        False a 'hcount'. Depending on the input, they will also have 'isotope'
+        and 'class' information. Edges will have an 'order'.
+
+    Returns:
+       networkx.Graph: This is a graph representation of the parsed numpy
+       adjacency matrix.
+    """
+
     adj = nx.adjacency_matrix(mol, weight='order').todense()
 
     return nx.from_numpy_matrix(adj)
 
 
 def get_labels_from_elements(elements):
+    """
+    get_labels_from_elements creates as list of string labels out of indicies
+    and elements.
+
+    Args:
+        elements (tuple): Contains the index and the string representing the
+        node of the graph.
+
+    Returns:
+        list: This list contains strings as elements, where each string
+        describes the node of the graph.
+    """
+
     labels = {}
     for idx, el in elements:
         labels[idx] = "{}: {}".format(idx, el)
@@ -91,6 +119,23 @@ def get_labels_from_elements(elements):
 
 # TODO: Low-priority. Make the output graph nicer and sparser
 def plot_molecule_graph(G, labels, folder_name='graph', graph_num=None):
+    """
+    plot_molecule_graph creates a visual representation of the graph and saves
+    it.
+
+    Args:
+        G (networkx.Graph): The graph representation of the molecule.
+        labels (list): This list contains string labels that describe elements
+        of the graph.
+        folder_name (str, optional): The name of the directory where the image
+        will be saved. Defaults to 'graph'.
+        graph_num (int, optional): The optional integer that represents the
+        number of the graph. It is used when the image has to be created for
+        multiple molecules (graphs). Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
 
     dirname = os.path.join(os.path.realpath("."), folder_name)
     if not os.path.exists(dirname):
@@ -114,6 +159,7 @@ def plot_molecule_graph(G, labels, folder_name='graph', graph_num=None):
 
 
 def encode_molecule(mol, plot_molecule=None, level=None, folder_name='graph'):
+
     elements = mol.nodes(data="element")
     G = create_graph_for_molecule(mol)
 
@@ -189,6 +235,17 @@ def encode_molecule(mol, plot_molecule=None, level=None, folder_name='graph'):
 
 
 def next_perfect_square(N):
+    """
+    next_perfect_square finds the next perfect square of the argument. For
+    example, the perfect square of number 223 is 225 (=15*15).
+
+    Args:
+        N (int): This number is used to find the next perfect square of it.
+
+    Returns:
+        int: The perfect square of the argument.
+    """
+
     nextN = math.floor(math.sqrt(N)) + 1
 
     return nextN * nextN
@@ -213,7 +270,7 @@ def center_matrix(m, target_dim):
             m = np.append(m, to_append, axis=1)
             cur_dim[0] += 1
 
-    return(m)
+    return (m)
 
 
 def shift_matrix(m, target_dim):
@@ -227,7 +284,7 @@ def shift_matrix(m, target_dim):
         m = np.append(m, to_append, axis=1)
         cur_dim[0] += 1
 
-    return(m)
+    return (m)
 
 
 def get_unique_atoms(mol):
