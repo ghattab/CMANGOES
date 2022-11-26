@@ -430,6 +430,24 @@ def normalize_encodings(dummy_encodings, names, center_encoding=True):
 def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
                                 folder_name="encoding_images",
                                 print_progress=False):
+    """
+    generate_imgs_from_encoding generates images for all encodings.
+
+    Args:
+        normalized_encoding (dict): This dictionary contains the normalized
+        encodings for each atom in the molecule.
+        binary_encoding (bool, optional): If this flag is True, the binary
+        encoding is calculated. If it is False, discretized encoding is
+        calculated. Defaults to True.
+        folder_name (str, optional): This variable contains the name of the
+        directory for encoding images. This directory is not created if
+        generate_images is False. Defaults to "encoding_images".
+        print_progress (bool, optional): If True, the progress of the
+        calculation will be shown to the user. Defaults to False.
+
+    Returns:
+        None: None
+    """
 
     if print_progress:
         clear_output(wait=True)
@@ -507,18 +525,17 @@ def encode_molecules(
         is centered. If it is False, the encoding is shifted to the right.
         Defaults to True.
         plot_molecule (int, optional): This argument contains the number of the
-        sequence from the input for which the image should be generated. If set
-        to 1, the algorithm will generate an image for the first sequence of
-        the input file. Defaults to None.
+        sequence from the input for which the molecule representation (image)
+        should be generated. If set to 1, the algorithm will generate an image
+        for the first sequence of the input file. Defaults to None.
         print_progress (bool, optional): If True, the progress of the
         calculation will be shown to the user. Defaults to False.
         generate_images (bool, optional): If True, the image will be generated
-        for the molecule with the sequence number plot_molecule in the input
-        file. Defaults to False.
+        for all encodings. Defaults to False.
         level (int, optional): Describes the level for the traversing
         algorithm. Defaults to None.
         output_path (str, optional): This variable contains the name of the
-        directory for molecule images. This directory is not created if
+        directory for encoding images. This directory is not created if
         generate_images is False. Defaults to "encoding_images".
 
     Returns:
@@ -546,6 +563,21 @@ def encode_molecules(
 # CSV export of normalized encoding
 def csv_export(normalized_encoding, classes=pd.DataFrame(),
                output_path="encoding.csv"):
+    """
+    csv_export function exports the normalized encodings in a csv file.
+
+    Args:
+        normalized_encoding (dict): This dictionary contains the normalized
+        encodings for each atom in the molecule.
+        classes (pd.DataFrame, optional): This DataFrame contains one column
+        that holds the prediction class for each sequence. Defaults to
+        pd.DataFrame.
+        output_path (str, optional): This string is the name of the resulting
+        csv file. Defaults to "encoding.csv".
+
+    Returns:
+        None: None
+    """
     encoding_as_df = pd.DataFrame.from_dict(
         normalized_encoding, orient="index")
     encoding_as_df = encoding_as_df.reset_index(drop=True)
