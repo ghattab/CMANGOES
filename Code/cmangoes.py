@@ -134,7 +134,7 @@ def plot_molecule_graph(G, labels, folder_name='graph', graph_num=None):
         multiple molecules (graphs). Defaults to None.
 
     Returns:
-        _type_: _description_
+        None: None
     """
 
     dirname = os.path.join(os.path.realpath("."), folder_name)
@@ -493,6 +493,38 @@ def encode_molecules(
         smiles, names, binary_encoding=True, center_encoding=True,
         plot_molecule=None, print_progress=False, generate_images=False,
         level=None, output_path="encoding_images"):
+    """
+    encode_molecules encodes the input molecules in smiles format into
+    machine-readable numerical arrays.
+
+    Args:
+        smiles (list): This list contains smiles strings as elements.
+        names (list): This list contains strings of atoms as elements.
+        binary_encoding (bool, optional): If this flag is True, the binary
+        encoding is calculated. If it is False, discretized encoding is
+        calculated. Defaults to True.
+        center_encoding (bool, optional): If this flag is True, the encoding
+        is centered. If it is False, the encoding is shifted to the right.
+        Defaults to True.
+        plot_molecule (int, optional): This argument contains the number of the
+        sequence from the input for which the image should be generated. If set
+        to 1, the algorithm will generate an image for the first sequence of
+        the input file. Defaults to None.
+        print_progress (bool, optional): If True, the progress of the
+        calculation will be shown to the user. Defaults to False.
+        generate_images (bool, optional): If True, the image will be generated
+        for the molecule with the sequence number plot_molecule in the input
+        file. Defaults to False.
+        level (int, optional): Describes the level for the traversing
+        algorithm. Defaults to None.
+        output_path (str, optional): This variable contains the name of the
+        directory for molecule images. This directory is not created if
+        generate_images is False. Defaults to "encoding_images".
+
+    Returns:
+        dict: This dictionary contains the normalized encodings for each atom
+        in the molecule.
+    """
 
     dummies = dummy_encode_molecules(
         smiles=smiles, binary_encoding=binary_encoding,
@@ -613,8 +645,18 @@ def generate_all_encodings(smiles, names, data_set_identifier, level,
 
 
 # This function was once a part of the main function
-# It is used to create sample data sets that are mentioned in the paper
 def create_datasets(levels):
+    """
+    create_datasets creates sample data sets that are mentioned in the paper.
+
+    Args:
+        levels (list): This list contains int elements that represent the level
+        of the neighborhood to be considered.
+
+    Returns:
+        None: None.
+    """
+
     # Paths were hard-coded before. Below is the proper definition
     amino_acid_path = os.path.join("..", "Data", "amino_acids",
                                    "amino_acids.csv")
