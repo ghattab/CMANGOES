@@ -159,6 +159,28 @@ def plot_molecule_graph(G, labels, folder_name='graph', graph_num=None):
 
 
 def encode_molecule(mol, plot_molecule=None, level=None, folder_name='graph'):
+    """
+    encode_molecule function traverses molecules one level at a time and
+    and creates a graph representation of that molecule.
+
+    Args:
+        mol (networkx.Graph): A graph describing a molecule. Nodes will have an
+        'element', 'aromatic' and a 'charge', and if `explicit_hydrogen` is
+        False a 'hcount'. Depending on the input, they will also have 'isotope'
+        and 'class' information. Edges will have an 'order'.
+        plot_molecule (int, optional): This argument contains the number of the
+        sequence from the input for which the molecule representation (image)
+        should be generated. If set to 1, the algorithm will generate an image
+        for the first sequence of the input file. Defaults to None.
+        level (int, optional): Describes the level for the traversing
+        algorithm. Defaults to None.
+        output_path (str, optional): This variable contains the name of the
+        directory for encoding images. Defaults to 'graph'.
+
+    Returns:
+        pd.DataFrame: The columns of this DataFrame are carbon atoms in the
+        molecule. Each row holds neighbors of all carbon atoms in columns.
+    """
 
     elements = mol.nodes(data="element")
     G = create_graph_for_molecule(mol)
@@ -340,6 +362,29 @@ def get_unique_atoms(mol):
 def dummy_encode_molecules(smiles, binary_encoding=True, print_progress=False,
                            plot_molecule=None, level=None,
                            folder_name='graph'):
+    """
+    dummy_encode_molecules dummy encodes the traversed molecule.
+
+    Args:
+        smiles (list): This list contains smiles strings as elements.
+        binary_encoding (bool, optional): If this flag is True, the binary
+        encoding is calculated. If it is False, discretized encoding is
+        calculated. Defaults to True.
+        print_progress (bool, optional): If True, the progress of the
+        calculation will be shown to the user. Defaults to False.
+        plot_molecule (int, optional): This argument contains the number of the
+        sequence from the input for which the molecule representation (image)
+        should be generated. If set to 1, the algorithm will generate an image
+        for the first sequence of the input file. Defaults to None.
+        level (int, optional): Describes the level for the traversing
+        algorithm. Defaults to None.
+        output_path (str, optional): This variable contains the name of the
+        directory for encoding images. Defaults to 'graph'.
+
+    Returns:
+        list: The elements of this list are pd.DataFrames that represent dummy
+        encodings of each input file.
+    """
     res = []
     number_of_elements = len(smiles)
 
@@ -391,6 +436,22 @@ def dummy_encode_molecules(smiles, binary_encoding=True, print_progress=False,
 
 # Function to normalize dummy encoding
 def normalize_encodings(dummy_encodings, names, center_encoding=True):
+    """
+    normalize_encodings either centers of shifts the encodings by padding them
+    with zeroes.
+
+    Args:
+        dummy_encodings (list): The elements of this list are pd.DataFrames
+        that represent dummy encodings of each input file.
+        names (list): This list contains strings of atoms as elements.
+        center_encoding (bool, optional): If this flag is True, the encoding
+        is centered. If it is False, the encoding is shifted to the right.
+        Defaults to True.
+
+    Returns:
+        dict: This dictionary contains the normalized encodings for each input
+        file.
+    """
 
     max_dim = 0
     squared_matrices = []
@@ -435,7 +496,7 @@ def generate_imgs_from_encoding(normalized_encoding, binary_encoding=True,
 
     Args:
         normalized_encoding (dict): This dictionary contains the normalized
-        encodings for each atom in the molecule.
+        encodings for each input file.
         binary_encoding (bool, optional): If this flag is True, the binary
         encoding is calculated. If it is False, discretized encoding is
         calculated. Defaults to True.
@@ -568,7 +629,7 @@ def csv_export(normalized_encoding, classes=pd.DataFrame(),
 
     Args:
         normalized_encoding (dict): This dictionary contains the normalized
-        encodings for each atom in the molecule.
+        encodings for each input file.
         classes (pd.DataFrame, optional): This DataFrame contains one column
         that holds the prediction class for each sequence. Defaults to
         pd.DataFrame.
@@ -597,6 +658,24 @@ def csv_export(normalized_encoding, classes=pd.DataFrame(),
 # Helper function to generate all permutatations of encodings
 def generate_all_encodings(smiles, names, data_set_identifier, level,
                            classes=pd.DataFrame()):
+    """
+    generate_all_encodings is a helper function used to generate encodings for
+    all data presented in the original paper.
+
+    Args:
+        smiles (list): This list contains smiles strings as elements.
+        names (list): This list contains strings of atoms as elements.
+        data_set_identifier (str): This string is used to generate a directory
+        for the result of a specific data set.
+        level (int, optional): Describes the level for the traversing
+        algorithm. Defaults to None.
+        classes (pd.DataFrame, optional): This DataFrame contains one column
+        that holds the prediction class for each sequence. Defaults to
+        pd.DataFrame.
+
+    Returns:
+        None: None.
+    """
 
     # Hard-coded paths for testing purposes
     root_test_path = os.path.join('..', 'Test', 'Paper')
